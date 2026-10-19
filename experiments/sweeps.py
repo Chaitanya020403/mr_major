@@ -31,11 +31,14 @@ def sweep_tightness(
     n_per_point: int = 20,
     base_seed: int = 0,
 ) -> list[SweepResult]:
+    """Vary tightness across all three scenario families to see the feasibility transition."""
+    families = ["feasible", "planted_infeasible", "barely_feasible"]
     results = []
     for tightness in tightness_values:
         n_feasible = 0
         for i in range(n_per_point):
-            cfg = GeneratorConfig(tightness=tightness, seed=base_seed + i)
+            family = families[i % len(families)]
+            cfg = GeneratorConfig(tightness=tightness, seed=base_seed + i, family=family)
             scenario = generate(cfg)
             orders, _ = validate_orders([o.model_dump() for o in scenario.orders])
             vehicles, _ = validate_fleet([v.model_dump() for v in scenario.vehicles])
@@ -52,11 +55,14 @@ def sweep_fridge_fraction(
     n_per_point: int = 20,
     base_seed: int = 100,
 ) -> list[SweepResult]:
+    """Vary fridge fraction across all families to see compatibility-driven infeasibility."""
+    families = ["feasible", "planted_infeasible", "barely_feasible"]
     results = []
     for ff in fridge_values:
         n_feasible = 0
         for i in range(n_per_point):
-            cfg = GeneratorConfig(fridge_fraction=ff, seed=base_seed + i)
+            family = families[i % len(families)]
+            cfg = GeneratorConfig(fridge_fraction=ff, seed=base_seed + i, family=family)
             scenario = generate(cfg)
             orders, _ = validate_orders([o.model_dump() for o in scenario.orders])
             vehicles, _ = validate_fleet([v.model_dump() for v in scenario.vehicles])

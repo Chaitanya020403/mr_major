@@ -1,0 +1,20 @@
+{"seed": 0, "round1_feasible": true, "round2_feasible": false, "assignments_moved": 0, "solve_time_ms": 1.2023890012642369, "change": "T1 is unavailable at 9AM."}
+{"seed": 1, "round1_feasible": true, "round2_feasible": true, "assignments_moved": 1, "solve_time_ms": 1.8479330028640106, "change": "T1 is unavailable at 9AM."}
+{"seed": 2, "round1_feasible": true, "round2_feasible": true, "assignments_moved": 0, "solve_time_ms": 1.737583996145986, "change": "T1 is unavailable at 9AM."}
+{"seed": 3, "round1_feasible": true, "round2_feasible": true, "assignments_moved": 4, "solve_time_ms": 2.1038319973740727, "change": "T1 is unavailable at 11AM."}
+{"seed": 4, "skipped": true}
+{"seed": 5, "round1_feasible": true, "round2_feasible": true, "assignments_moved": 1, "solve_time_ms": 1.7790000056265853, "change": "T1 is unavailable at 9AM."}
+{"seed": 6, "round1_feasible": true, "round2_feasible": true, "assignments_moved": 1, "solve_time_ms": 1.5897299963398837, "change": "T1 is unavailable at 9AM."}
+{"seed": 7, "skipped": true}
+{"seed": 8, "round1_feasible": true, "round2_feasible": false, "assignments_moved": 0, "solve_time_ms": 1.3645610015373677, "change": "T1 is unavailable at 9AM."}
+{"seed": 9, "round1_feasible": true, "round2_feasible": false, "assignments_moved": 0, "solve_time_ms": 1.3858630045433529, "change": "T1 is unavailable at 9AM."}
+{"seed": 10, "skipped": true}
+{"seed": 11, "round1_feasible": true, "round2_feasible": false, "assignments_moved": 0, "solve_time_ms": 1.2799829928553663, "change": "T1 is unavailable at 9AM."}
+{"seed": 12, "round1_feasible": true, "round2_feasible": false, "assignments_moved": 0, "solve_time_ms": 1.5559270032099448, "change": "T1 is unavailable at 9AM."}
+{"seed": 13, "skipped": true}
+{"seed": 14, "skipped": true}
+{"seed": 15, "round1_feasible": true, "round2_feasible": false, "assignments_moved": 0, "solve_time_ms": 1.3877489982405677, "change": "T1 is unavailable at 9AM."}
+{"seed": 16, "skipped": true}
+{"seed": 17, "round1_feasible": true, "round2_feasible": false, "assignments_moved": 0, "solve_time_ms": 1.6476290038553998, "change": "T1 is unavailable at 9AM."}
+{"seed": 18, "round1_feasible": true, "round2_feasible": false, "assignments_moved": 0, "solve_time_ms": 2.0396480031195097, "change": "T1 is unavailable at 9AM."}
+{"seed": 19, "skipped": true}

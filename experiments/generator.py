@@ -108,7 +108,6 @@ def generate(cfg: GeneratorConfig) -> Scenario:
         if _is_feasible(orders, vehicles, trial):
             gold.append(candidate)
 
-    request = _gold_to_request(gold, rng)
     label = {"feasible": True, "conflict": None}
 
     if cfg.family == "planted_infeasible":
@@ -184,6 +183,9 @@ def generate(cfg: GeneratorConfig) -> Scenario:
     actual_feasible = _is_feasible(orders, vehicles, gold)
     if actual_feasible != label["feasible"]:
         label = {"feasible": actual_feasible, "conflict": None}
+
+    # Build the request AFTER all planting so every gold constraint is in the NL text
+    request = _gold_to_request(gold, rng)
 
     change = "extend all deadlines by one slot"
     return Scenario(

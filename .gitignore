@@ -7,5 +7,5 @@ build/
 .env
 *.log
 logs/
-results/
+# results/   # kept in repo for reproducibility
 .DS_Store

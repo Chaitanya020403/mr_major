@@ -1,0 +1,6 @@
+{"n_orders": 6, "correct": 10, "total": 10, "avg_ms": 1.7}
+{"n_orders": 8, "correct": 10, "total": 10, "avg_ms": 1.74}
+{"n_orders": 10, "correct": 10, "total": 10, "avg_ms": 2.1}
+{"n_orders": 15, "correct": 10, "total": 10, "avg_ms": 2.73}
+{"n_orders": 20, "correct": 10, "total": 10, "avg_ms": 3.3}
+{"n_orders": 30, "correct": 10, "total": 10, "avg_ms": 6.94}
