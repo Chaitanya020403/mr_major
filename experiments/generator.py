@@ -112,27 +112,78 @@ def generate(cfg: GeneratorConfig) -> Scenario:
     label = {"feasible": True, "conflict": None}
 
     if cfg.family == "planted_infeasible":
-        # Force infeasibility by forbidding the only refrigerated vehicle
-        # from orders that need refrigeration
+        # Strategy 1: forbid the only fridge vehicle from fridge orders
         fridge_orders = [o for o in orders if "refrigerated" in o.needs]
         fridge_vehicles = [v for v in vehicles if v.type == "refrigerated"]
+        planted = False
         if fridge_orders and fridge_vehicles:
-            for fo in fridge_orders:
-                for fv in fridge_vehicles:
-                    gold.append({
-                        "type": "FORBIDDEN_VEHICLE",
-                        "order": fo.id,
-                        "vehicle": fv.id,
-                        "source": f"don't use {fv.id} for {fo.id}",
-                    })
-            label = {
-                "feasible": False,
-                "conflict": {
-                    "orders":   [fo.id for fo in fridge_orders],
-                    "vehicles": [fv.id for fv in fridge_vehicles],
-                    "rules":    ["R5"],
-                },
-            }
+            trial = gold + [
+                {"type": "FORBIDDEN_VEHICLE", "order": fo.id, "vehicle": fv.id, "source": f"no {fv.id} for {fo.id}"}
+                for fo in fridge_orders for fv in fridge_vehicles
+            ]
+            if not _is_feasible(orders, vehicles, trial):
+                gold = trial
+                label = {
+                    "feasible": False,
+                    "conflict": {
+                        "orders":   [fo.id for fo in fridge_orders],
+                        "vehicles": [fv.id for fv in fridge_vehicles],
+                        "rules":    ["R5"],
+                    },
+                }
+                planted = True
+
+        # Strategy 2: forbid an order from every vehicle it could use
+        if not planted:
+            for o in orders:
+                compatible = [v for v in vehicles
+                              if (not o.needs or o.needs[0] in v.type)
+                              and any(
+                                  (not o.deadline or slots.index(t) <= slots.index(o.deadline))
+                                  for t in v.available_slots
+                              )]
+                if len(compatible) == 1:
+                    trial = gold + [
+                        {"type": "FORBIDDEN_VEHICLE", "order": o.id,
+                         "vehicle": compatible[0].id, "source": f"no vehicle for {o.id}"}
+                    ]
+                    if not _is_feasible(orders, vehicles, trial):
+                        gold = trial
+                        label = {
+                            "feasible": False,
+                            "conflict": {"orders": [o.id], "vehicles": [compatible[0].id], "rules": ["R8"]},
+                        }
+                        planted = True
+                        break
+
+        # Strategy 3: capacity overflow — overload the tightest slot
+        if not planted:
+            from core.schema import VALID_SLOTS as VS
+            for t in slots:
+                avail_vehicles = [v for v in vehicles if t in v.available_slots]
+                total_cap = sum(v.capacity for v in avail_vehicles)
+                # Force all orders into this slot by giving each a tight deadline
+                overload_orders = orders[:2]
+                if sum(o.weight for o in overload_orders) > total_cap:
+                    for o in overload_orders:
+                        gold.append({"type": "DEADLINE", "order": o.id, "slot": t,
+                                     "source": f"{o.id} must leave by {t}"})
+                    label = {
+                        "feasible": False,
+                        "conflict": {"orders": [o.id for o in overload_orders],
+                                     "vehicles": [v.id for v in avail_vehicles], "rules": ["R2"]},
+                    }
+                    planted = True
+                    break
+
+        # If we still couldn't plant, fall back to feasible label with solver truth
+        if not planted:
+            label = {"feasible": True, "conflict": None}
+
+    # Final truth check — correct the label if solver disagrees
+    actual_feasible = _is_feasible(orders, vehicles, gold)
+    if actual_feasible != label["feasible"]:
+        label = {"feasible": actual_feasible, "conflict": None}
 
     change = "extend all deadlines by one slot"
     return Scenario(

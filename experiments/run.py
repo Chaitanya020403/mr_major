@@ -97,7 +97,12 @@ def evaluate(result: dict[str, Any], case: dict[str, Any], orders, vehicles) -> 
     }
 
     if claimed_feasible and result.get("plan"):
-        plan = {oid: tuple(v) for oid, v in result["plan"].items()}  # type: ignore
+        # Our system stores tuples; LLM-alone stores {"vehicle": ..., "slot": ...}
+        def _to_tuple(v: Any) -> tuple[str, str]:
+            if isinstance(v, (list, tuple)):
+                return (str(v[0]), str(v[1]))
+            return (str(v["vehicle"]), str(v["slot"]))
+        plan = {oid: _to_tuple(v) for oid, v in result["plan"].items()}
         check = check_plan(plan, orders, vehicles, gold_constraints)
         eval_out["plan_valid"] = check.valid
         eval_out["plan_violations"] = check.violations
@@ -139,6 +144,8 @@ def main() -> None:
     parser.add_argument("--provider", default="groq")
     parser.add_argument("--model", default=None)
     parser.add_argument("--out", type=Path, default=None)
+    parser.add_argument("--delay", type=float, default=15.0,
+                        help="Seconds to sleep between cases (avoid rate limits)")
     args = parser.parse_args()
 
     results = []
@@ -150,7 +157,7 @@ def main() -> None:
 
     elif args.generate:
         from experiments.generator import GeneratorConfig, generate, save_case
-        import tempfile, os
+        import tempfile, os, time
         families = ["feasible", "planted_infeasible", "barely_feasible"]
         for i in range(args.n):
             cfg = GeneratorConfig(seed=i, family=families[i % len(families)])
@@ -162,6 +169,7 @@ def main() -> None:
                 r["seed"] = i
                 results.append(r)
                 print(f"case {i:04d}: {r.get('llm_z3', r.get('llm_alone', {})).get('feasible')}")
+                time.sleep(args.delay)
 
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)
