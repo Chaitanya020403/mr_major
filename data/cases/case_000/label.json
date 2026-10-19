@@ -1,0 +1,8 @@
+{
+  "feasible": false,
+  "conflict": {
+    "orders": ["A", "B", "C"],
+    "vehicles": ["T1", "T2"],
+    "rules": ["R1", "R2", "R3", "R5", "USER"]
+  }
+}

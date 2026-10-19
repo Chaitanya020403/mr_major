@@ -1,0 +1,14 @@
+[
+  {
+    "id": "T1",
+    "capacity": 100,
+    "type": "normal",
+    "available_slots": ["9AM", "11AM"]
+  },
+  {
+    "id": "T2",
+    "capacity": 80,
+    "type": "refrigerated",
+    "available_slots": ["11AM"]
+  }
+]

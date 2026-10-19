@@ -1,0 +1,14 @@
+[
+  {
+    "type": "PRECEDENCE",
+    "before": "B",
+    "after": "C",
+    "source": "B must go before C"
+  },
+  {
+    "type": "FORBIDDEN_VEHICLE",
+    "order": "A",
+    "vehicle": "T2",
+    "source": "don't put A on T2"
+  }
+]

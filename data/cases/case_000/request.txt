@@ -1,0 +1,1 @@
+B must go before C, and don't put A on T2.

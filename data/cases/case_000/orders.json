@@ -1,0 +1,26 @@
+[
+  {
+    "id": "A",
+    "weight": 60,
+    "deadline": "9AM",
+    "time_window": ["9AM", "9AM"],
+    "priority": "normal",
+    "needs": []
+  },
+  {
+    "id": "B",
+    "weight": 50,
+    "deadline": "11AM",
+    "time_window": ["9AM", "11AM"],
+    "priority": "normal",
+    "needs": []
+  },
+  {
+    "id": "C",
+    "weight": 30,
+    "deadline": "11AM",
+    "time_window": ["9AM", "11AM"],
+    "priority": "normal",
+    "needs": ["refrigerated"]
+  }
+]
