@@ -49,6 +49,14 @@ def check_plan(
     def slot_of(oid: str) -> str:
         return plan[oid][1]
 
+    # Collect deadline overrides from user constraints
+    deadline_overrides: dict[str, str] = {}
+    for uc in gold_constraints:
+        if isinstance(uc, ChangeDeadlineConstraint):
+            deadline_overrides[uc.order] = uc.new_deadline
+        elif isinstance(uc, DeadlineConstraint):
+            deadline_overrides[uc.order] = uc.slot
+
     # R1: every order assigned
     for o in orders:
         if o.id not in plan:
@@ -71,10 +79,11 @@ def check_plan(
         if slot not in v.available_slots:
             violations.append(f"R3: vehicle {vid} not available at {slot} (order {oid})")
 
-        # R4: delivery window
-        if o.deadline and slot_idx[slot] > slot_idx[o.deadline]:
-            violations.append(f"R4: order {oid} deadline {o.deadline} missed (dispatched {slot})")
-        if o.time_window:
+        # R4: delivery window (user CHANGE_DEADLINE/DEADLINE overrides order data)
+        effective_deadline = deadline_overrides.get(oid, o.deadline)
+        if effective_deadline and slot_idx[slot] > slot_idx[effective_deadline]:
+            violations.append(f"R4: order {oid} deadline {effective_deadline} missed (dispatched {slot})")
+        if o.time_window and oid not in deadline_overrides:
             early, late = o.time_window
             if slot_idx[slot] < slot_idx[early] or slot_idx[slot] > slot_idx[late]:
                 violations.append(f"R4: order {oid} outside time window [{early},{late}] at {slot}")

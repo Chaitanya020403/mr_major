@@ -91,13 +91,23 @@ def solve(
                     track(Not(x[(o.id, v.id, t)]), f"R3_avail_{o.id}_{v.id}_{t}")
 
     # --- R4: delivery window / deadline from order data ---
+    # CHANGE_DEADLINE/DEADLINE user constraints override the order's original window.
+    deadline_overrides: dict[str, str] = {}
+    for uc in user_constraints:
+        if isinstance(uc, ChangeDeadlineConstraint):
+            deadline_overrides[uc.order] = uc.new_deadline
+        elif isinstance(uc, DeadlineConstraint):
+            deadline_overrides[uc.order] = uc.slot
+
     for o in orders:
         for v in vehicles:
             for t in slots:
                 blocked = False
-                if o.deadline and _slot_index(t) > _slot_index(o.deadline):
+                effective_deadline = deadline_overrides.get(o.id, o.deadline)
+                if effective_deadline and _slot_index(t) > _slot_index(effective_deadline):
                     blocked = True
-                if o.time_window:
+                # time_window is only enforced if there's no deadline override
+                if o.time_window and o.id not in deadline_overrides:
                     early, late = o.time_window
                     if _slot_index(t) < _slot_index(early) or _slot_index(t) > _slot_index(late):
                         blocked = True
