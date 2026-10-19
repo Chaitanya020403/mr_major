@@ -86,7 +86,7 @@ st.caption("AID-851 Machine Reasoning · LLM + Z3 vs LLM-alone")
 with st.sidebar:
     st.header("Configuration")
     provider = st.selectbox("LLM provider", ["groq", "openai", "anthropic"])
-    default_models = {"groq": "llama-3.3-70b-versatile", "openai": "gpt-4o", "anthropic": "claude-sonnet-4-6"}
+    default_models = {"groq": "openai/gpt-oss-120b", "openai": "gpt-4o", "anthropic": "claude-sonnet-4-6"}
     model = st.text_input("Model", value=default_models[provider])
     env_key = {"groq": "GROQ_API_KEY", "openai": "OPENAI_API_KEY", "anthropic": "ANTHROPIC_API_KEY"}[provider]
     api_key = st.text_input("API key", type="password", value=os.environ.get(env_key, ""))

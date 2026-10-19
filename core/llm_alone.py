@@ -117,7 +117,7 @@ def plan_with_llm_alone(
     request: str,
     orders: list[Order],
     vehicles: list[Vehicle],
-    provider: str = "openai",
+    provider: str = "groq",
     model: str | None = None,
 ) -> tuple[dict[str, Any], str]:
     """
@@ -131,8 +131,8 @@ def plan_with_llm_alone(
         f"Today's instruction: {request}"
     )
 
-    default_models = {"openai": "gpt-4o", "groq": "llama-3.3-70b-versatile", "anthropic": "claude-sonnet-4-6"}
-    raw = _call_llm(system, user, provider, model or default_models.get(provider, "llama-3.3-70b-versatile"))
+    default_models = {"openai": "gpt-4o", "groq": "openai/gpt-oss-120b", "anthropic": "claude-sonnet-4-6"}
+    raw = _call_llm(system, user, provider, model or default_models.get(provider, "openai/gpt-oss-120b"))
 
     logger.debug("LLM-alone raw output: %s", raw)
 

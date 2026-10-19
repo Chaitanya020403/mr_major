@@ -59,7 +59,7 @@ def _call_openai(system: str, user: str, model: str = "gpt-4o") -> str:
     return response.choices[0].message.content or ""
 
 
-def _call_groq(system: str, user: str, model: str = "llama-3.3-70b-versatile") -> str:
+def _call_groq(system: str, user: str, model: str = "openai/gpt-oss-120b") -> str:
     import openai
     client = openai.OpenAI(
         api_key=os.environ["GROQ_API_KEY"],
@@ -110,7 +110,7 @@ def translate(
     if provider == "openai":
         raw = _call_openai(system, user, model or "gpt-4o")
     elif provider == "groq":
-        raw = _call_groq(system, user, model or "llama-3.3-70b-versatile")
+        raw = _call_groq(system, user, model or "openai/gpt-oss-120b")
     elif provider == "anthropic":
         raw = _call_anthropic(system, user, model or "claude-sonnet-4-6")
     else:
