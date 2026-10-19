@@ -59,6 +59,23 @@ def _call_openai(system: str, user: str, model: str = "gpt-4o") -> str:
     return response.choices[0].message.content or ""
 
 
+def _call_groq(system: str, user: str, model: str = "llama-3.3-70b-versatile") -> str:
+    import openai
+    client = openai.OpenAI(
+        api_key=os.environ["GROQ_API_KEY"],
+        base_url="https://api.groq.com/openai/v1",
+    )
+    response = client.chat.completions.create(
+        model=model,
+        temperature=0,
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user",   "content": user},
+        ],
+    )
+    return response.choices[0].message.content or ""
+
+
 def _call_anthropic(system: str, user: str, model: str = "claude-sonnet-4-6") -> str:
     import anthropic
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
@@ -76,7 +93,7 @@ def translate(
     request: str,
     orders: list[Order],
     vehicles: list[Vehicle],
-    provider: str = "openai",
+    provider: str = "groq",
     model: str | None = None,
 ) -> tuple[list[dict[str, Any]], str]:
     """
@@ -92,6 +109,8 @@ def translate(
 
     if provider == "openai":
         raw = _call_openai(system, user, model or "gpt-4o")
+    elif provider == "groq":
+        raw = _call_groq(system, user, model or "llama-3.3-70b-versatile")
     elif provider == "anthropic":
         raw = _call_anthropic(system, user, model or "claude-sonnet-4-6")
     else:

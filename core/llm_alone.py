@@ -89,6 +89,18 @@ def _call_llm(system: str, user: str, provider: str, model: str) -> str:
                       {"role": "user",   "content": user}],
         )
         return resp.choices[0].message.content or ""
+    elif provider == "groq":
+        import openai
+        client = openai.OpenAI(
+            api_key=os.environ["GROQ_API_KEY"],
+            base_url="https://api.groq.com/openai/v1",
+        )
+        resp = client.chat.completions.create(
+            model=model, temperature=0,
+            messages=[{"role": "system", "content": system},
+                      {"role": "user",   "content": user}],
+        )
+        return resp.choices[0].message.content or ""
     elif provider == "anthropic":
         import anthropic
         client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
@@ -119,8 +131,8 @@ def plan_with_llm_alone(
         f"Today's instruction: {request}"
     )
 
-    default_models = {"openai": "gpt-4o", "anthropic": "claude-sonnet-4-6"}
-    raw = _call_llm(system, user, provider, model or default_models.get(provider, "gpt-4o"))
+    default_models = {"openai": "gpt-4o", "groq": "llama-3.3-70b-versatile", "anthropic": "claude-sonnet-4-6"}
+    raw = _call_llm(system, user, provider, model or default_models.get(provider, "llama-3.3-70b-versatile"))
 
     logger.debug("LLM-alone raw output: %s", raw)
 

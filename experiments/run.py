@@ -136,7 +136,7 @@ def main() -> None:
     parser.add_argument("--generate", action="store_true", help="Generate n scenarios")
     parser.add_argument("--n", type=int, default=20)
     parser.add_argument("--method", choices=["our", "llm_alone", "both"], default="both")
-    parser.add_argument("--provider", default="openai")
+    parser.add_argument("--provider", default="groq")
     parser.add_argument("--model", default=None)
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args()
