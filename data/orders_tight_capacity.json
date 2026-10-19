@@ -1,0 +1,72 @@
+[
+  {
+    "id": "A",
+    "weight": 70,
+    "deadline": "9AM",
+    "time_window": [
+      "9AM",
+      "9AM"
+    ],
+    "priority": "urgent",
+    "needs": []
+  },
+  {
+    "id": "B",
+    "weight": 65,
+    "deadline": "9AM",
+    "time_window": [
+      "9AM",
+      "9AM"
+    ],
+    "priority": "normal",
+    "needs": []
+  },
+  {
+    "id": "C",
+    "weight": 50,
+    "deadline": "11AM",
+    "time_window": [
+      "9AM",
+      "11AM"
+    ],
+    "priority": "normal",
+    "needs": [
+      "refrigerated"
+    ]
+  },
+  {
+    "id": "D",
+    "weight": 40,
+    "deadline": "11AM",
+    "time_window": [
+      "9AM",
+      "11AM"
+    ],
+    "priority": "normal",
+    "needs": [
+      "refrigerated"
+    ]
+  },
+  {
+    "id": "E",
+    "weight": 30,
+    "deadline": "1PM",
+    "time_window": [
+      "11AM",
+      "1PM"
+    ],
+    "priority": "normal",
+    "needs": []
+  },
+  {
+    "id": "F",
+    "weight": 35,
+    "deadline": "3PM",
+    "time_window": [
+      "1PM",
+      "3PM"
+    ],
+    "priority": "normal",
+    "needs": []
+  }
+]

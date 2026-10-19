@@ -1,0 +1,46 @@
+[
+  {
+    "id": "A",
+    "weight": 50,
+    "deadline": "9AM",
+    "time_window": [
+      "9AM",
+      "9AM"
+    ],
+    "priority": "urgent",
+    "needs": []
+  },
+  {
+    "id": "B",
+    "weight": 30,
+    "deadline": "11AM",
+    "time_window": [
+      "9AM",
+      "11AM"
+    ],
+    "priority": "urgent",
+    "needs": []
+  },
+  {
+    "id": "C",
+    "weight": 45,
+    "deadline": "1PM",
+    "time_window": [
+      "9AM",
+      "1PM"
+    ],
+    "priority": "normal",
+    "needs": []
+  },
+  {
+    "id": "D",
+    "weight": 20,
+    "deadline": "3PM",
+    "time_window": [
+      "1PM",
+      "3PM"
+    ],
+    "priority": "normal",
+    "needs": []
+  }
+]

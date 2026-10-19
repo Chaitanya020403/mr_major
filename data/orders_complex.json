@@ -1,0 +1,94 @@
+[
+  {
+    "id": "A",
+    "weight": 60,
+    "deadline": "9AM",
+    "time_window": [
+      "9AM",
+      "9AM"
+    ],
+    "priority": "urgent",
+    "needs": []
+  },
+  {
+    "id": "B",
+    "weight": 35,
+    "deadline": "11AM",
+    "time_window": [
+      "9AM",
+      "11AM"
+    ],
+    "priority": "normal",
+    "needs": []
+  },
+  {
+    "id": "C",
+    "weight": 30,
+    "deadline": "1PM",
+    "time_window": [
+      "11AM",
+      "1PM"
+    ],
+    "priority": "normal",
+    "needs": [
+      "refrigerated"
+    ]
+  },
+  {
+    "id": "D",
+    "weight": 45,
+    "deadline": "11AM",
+    "time_window": [
+      "9AM",
+      "11AM"
+    ],
+    "priority": "urgent",
+    "needs": [
+      "refrigerated"
+    ]
+  },
+  {
+    "id": "E",
+    "weight": 25,
+    "deadline": "3PM",
+    "time_window": [
+      "1PM",
+      "3PM"
+    ],
+    "priority": "normal",
+    "needs": []
+  },
+  {
+    "id": "F",
+    "weight": 50,
+    "deadline": "1PM",
+    "time_window": [
+      "9AM",
+      "1PM"
+    ],
+    "priority": "normal",
+    "needs": []
+  },
+  {
+    "id": "G",
+    "weight": 20,
+    "deadline": "3PM",
+    "time_window": [
+      "9AM",
+      "3PM"
+    ],
+    "priority": "normal",
+    "needs": []
+  },
+  {
+    "id": "H",
+    "weight": 40,
+    "deadline": "11AM",
+    "time_window": [
+      "9AM",
+      "11AM"
+    ],
+    "priority": "normal",
+    "needs": []
+  }
+]

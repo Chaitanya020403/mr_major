@@ -1,0 +1,34 @@
+[
+  {
+    "id": "T1",
+    "capacity": 150,
+    "type": "normal",
+    "available_slots": [
+      "9AM",
+      "11AM",
+      "1PM",
+      "3PM"
+    ]
+  },
+  {
+    "id": "T2",
+    "capacity": 100,
+    "type": "refrigerated",
+    "available_slots": [
+      "9AM",
+      "11AM",
+      "1PM",
+      "3PM"
+    ]
+  },
+  {
+    "id": "T3",
+    "capacity": 120,
+    "type": "normal",
+    "available_slots": [
+      "9AM",
+      "1PM",
+      "3PM"
+    ]
+  }
+]
