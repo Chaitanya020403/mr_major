@@ -15,6 +15,16 @@ from typing import Optional
 from core.schema import Order, Vehicle, VALID_SLOTS
 
 
+def _is_feasible(orders: list[Order], vehicles: list[Vehicle], gold: list[dict]) -> bool:
+    """Quick feasibility check used during generation to avoid planting hidden conflicts."""
+    from core.json_validator import validate_constraints
+    from core.solver import solve
+    cv = validate_constraints(gold, orders, vehicles)
+    if not cv.ok:
+        return False
+    return solve(orders, vehicles, cv.constraints).feasible
+
+
 @dataclass
 class GeneratorConfig:
     n_orders: int = 8
@@ -77,17 +87,26 @@ def generate(cfg: GeneratorConfig) -> Scenario:
             needs=["refrigerated"] if needs_fridge else [],
         ))
 
-    # Generate precedence constraints
+    # If the base data is already infeasible (e.g. no fridge vehicle for fridge orders),
+    # drop the fridge requirement so the scenario stays solvable.
+    if not _is_feasible(orders, vehicles, []):
+        for o in orders:
+            o.needs = []
+
+    # Generate precedence constraints — only keep pairs that don't break feasibility
     gold: list[dict] = []
     shuffled = list(orders)
     rng.shuffle(shuffled)
     for j in range(min(cfg.precedence_chain, len(orders) - 1)):
-        gold.append({
+        candidate = {
             "type": "PRECEDENCE",
             "before": shuffled[j].id,
             "after":  shuffled[j+1].id,
             "source": f"{shuffled[j].id} before {shuffled[j+1].id}",
-        })
+        }
+        trial = gold + [candidate]
+        if _is_feasible(orders, vehicles, trial):
+            gold.append(candidate)
 
     request = _gold_to_request(gold, rng)
     label = {"feasible": True, "conflict": None}

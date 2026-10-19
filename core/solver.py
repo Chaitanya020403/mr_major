@@ -110,7 +110,7 @@ def solve(
             for v in vehicles:
                 if need not in v.type and need != v.type:
                     for t in slots:
-                        track(Not(x[(o.id, v.id, t)]), f"R5_compat_{o.id}_{v.id}_{need}")
+                        track(Not(x[(o.id, v.id, t)]), f"R5_compat_{o.id}_{v.id}_{need}_{t}")
 
     # --- Derived slot term for an order ---
     def slot_term(oid: str) -> ArithRef:
