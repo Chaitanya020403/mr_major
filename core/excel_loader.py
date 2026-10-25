@@ -162,15 +162,16 @@ def _canonical_columns(df: pd.DataFrame, expected: list[str]) -> dict[str, str]:
     return found
 
 
-def _rows(df: pd.DataFrame, cols: dict[str, str]):
-    """Yield (excel_row_number, getter) for non-empty rows. Header is Excel row 1."""
+def _rows(df: pd.DataFrame, cols: dict[str, str], first_row: int):
+    """Yield (row_number, getter) for non-empty rows; first_row is the number of the first data row."""
     for i, (_, row) in enumerate(df.iterrows()):
         if all(_blank(v) for v in row.values):
             continue
-        yield i + 2, (lambda name, row=row: row[cols[name]] if name in cols else None)
+        yield i + first_row, (lambda name, row=row: row[cols[name]] if name in cols else None)
 
 
-def orders_from_table(df: pd.DataFrame) -> tuple[list[dict[str, Any]], list[str]]:
+def orders_from_table(df: pd.DataFrame, first_row: int = 2) -> tuple[list[dict[str, Any]], list[str]]:
+    """first_row=2 numbers rows as Excel does (header is row 1); use 1 for in-app tables."""
     cols = _canonical_columns(df, ORDER_COLUMNS)
     missing = [c for c in ("Order ID", "Weight (kg)") if c not in cols]
     if missing:
@@ -178,7 +179,7 @@ def orders_from_table(df: pd.DataFrame) -> tuple[list[dict[str, Any]], list[str]
                     f"Expected columns: {', '.join(ORDER_COLUMNS)}."]
 
     orders, errors = [], []
-    for rownum, get in _rows(df, cols):
+    for rownum, get in _rows(df, cols, first_row):
         oid = parse_id(get("Order ID")) if not _blank(get("Order ID")) else ""
         where = f"Orders row {rownum}" + (f" (order {oid})" if oid else "")
         row_errors = []
@@ -225,11 +226,11 @@ def orders_from_table(df: pd.DataFrame) -> tuple[list[dict[str, Any]], list[str]
 
     errors.extend(_duplicate_id_errors(orders, "Orders", "order"))
     if not orders and not errors:
-        errors.append("Orders sheet has no orders in it.")
+        errors.append("No orders found. Add at least one order.")
     return orders, errors
 
 
-def fleet_from_table(df: pd.DataFrame) -> tuple[list[dict[str, Any]], list[str]]:
+def fleet_from_table(df: pd.DataFrame, first_row: int = 2) -> tuple[list[dict[str, Any]], list[str]]:
     cols = _canonical_columns(df, FLEET_COLUMNS)
     missing = [c for c in ("Vehicle ID", "Capacity (kg)") if c not in cols]
     if missing:
@@ -240,7 +241,7 @@ def fleet_from_table(df: pd.DataFrame) -> tuple[list[dict[str, Any]], list[str]]
                     "marked Yes when the vehicle is available."]
 
     fleet, errors = [], []
-    for rownum, get in _rows(df, cols):
+    for rownum, get in _rows(df, cols, first_row):
         vid = parse_id(get("Vehicle ID")) if not _blank(get("Vehicle ID")) else ""
         where = f"Fleet row {rownum}" + (f" (vehicle {vid})" if vid else "")
         row_errors = []
@@ -275,7 +276,7 @@ def fleet_from_table(df: pd.DataFrame) -> tuple[list[dict[str, Any]], list[str]]
 
     errors.extend(_duplicate_id_errors(fleet, "Fleet", "vehicle"))
     if not fleet and not errors:
-        errors.append("Fleet sheet has no vehicles in it.")
+        errors.append("No vehicles found. Add at least one vehicle.")
     return fleet, errors
 
 
@@ -285,7 +286,7 @@ def _duplicate_id_errors(records: list[dict[str, Any]], sheet: str, what: str) -
         if r["id"] in seen and r["id"] not in dups:
             dups.append(r["id"])
         seen.add(r["id"])
-    return [f"{sheet} sheet: {what} ID '{d}' appears more than once." for d in dups]
+    return [f"{sheet}: {what} ID '{d}' appears more than once." for d in dups]
 
 
 # ---------------------------------------------------------------------------
@@ -332,7 +333,9 @@ def load_spreadsheet(filename: str, data: bytes, expect: str = "orders") -> Load
 # JSON-format records → friendly tables (for previews and the template)
 # ---------------------------------------------------------------------------
 
-def orders_to_table(orders: list[dict[str, Any]]) -> pd.DataFrame:
+def orders_to_table(orders: list[dict[str, Any]], checkboxes: bool = False) -> pd.DataFrame:
+    """checkboxes=True gives True/False instead of Yes/No, for st.data_editor."""
+    yes, no = (True, False) if checkboxes else ("Yes", "No")
     rows = []
     for o in orders:
         tw = o.get("time_window") or [None, None]
@@ -340,25 +343,29 @@ def orders_to_table(orders: list[dict[str, Any]]) -> pd.DataFrame:
                "Earliest": tw[0], "Latest": tw[1],
                "Priority": o.get("priority", "normal").capitalize()}
         for col, need in NEED_COLUMNS.items():
-            row[col] = "Yes" if need in o.get("needs", []) else "No"
+            row[col] = yes if need in o.get("needs", []) else no
         rows.append(row)
     return pd.DataFrame(rows, columns=ORDER_COLUMNS)
 
 
-def fleet_to_table(fleet: list[dict[str, Any]]) -> pd.DataFrame:
+def fleet_to_table(fleet: list[dict[str, Any]], checkboxes: bool = False) -> pd.DataFrame:
+    yes, no = (True, False) if checkboxes else ("Yes", "No")
     rows = []
     for v in fleet:
         row = {"Vehicle ID": v["id"], "Capacity (kg)": v["capacity"],
                "Type": v.get("type", "normal").capitalize()}
         for slot in VALID_SLOTS:
-            row[slot] = "Yes" if slot in v["available_slots"] else "No"
+            row[slot] = yes if slot in v["available_slots"] else no
         rows.append(row)
     return pd.DataFrame(rows, columns=FLEET_COLUMNS)
 
 
 def build_template(example_orders: list[dict[str, Any]],
-                   example_fleet: list[dict[str, Any]]) -> bytes:
-    """Excel workbook with Orders, Fleet and How-to sheets, dropdowns on every choice column."""
+                   example_fleet: list[dict[str, Any]], is_example: bool = True) -> bytes:
+    """
+    Excel workbook with Orders, Fleet and How-to sheets, dropdowns on every choice column.
+    is_example=False when exporting the user's own data (drops the "replace the example" note).
+    """
     from openpyxl.styles import Alignment, Font, PatternFill
     from openpyxl.utils import get_column_letter
     from openpyxl.worksheet.datavalidation import DataValidation
@@ -367,7 +374,7 @@ def build_template(example_orders: list[dict[str, Any]],
     with pd.ExcelWriter(buf, engine="openpyxl") as writer:
         orders_to_table(example_orders).to_excel(writer, sheet_name=ORDERS_SHEET, index=False)
         fleet_to_table(example_fleet).to_excel(writer, sheet_name=FLEET_SHEET, index=False)
-        pd.DataFrame({"How to fill in this file": HOW_TO_LINES}).to_excel(
+        pd.DataFrame({"How to fill in this file": HOW_TO_LINES[0 if is_example else 1:]}).to_excel(
             writer, sheet_name="How to fill", index=False)
 
         wb = writer.book

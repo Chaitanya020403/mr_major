@@ -183,6 +183,9 @@ with st.sidebar:
     )
 
 # Main area
+# Filled in after inputs are resolved, but shown above the instructions
+data_area = st.container()
+
 col_left, col_right = st.columns([1, 1])
 
 with col_left:
@@ -230,19 +233,82 @@ if orders_file is None:
     fleet_raw  = uploaded_fleet or json.loads((WORKED_EXAMPLE / "fleet.json").read_text())
     st.info("Using worked example (orders A, B, C + fleet T1/T2). Upload your own files to override.")
 
+# ---------------------------------------------------------------------------
+# Editable data tables — the planner uses whatever is shown here
+# ---------------------------------------------------------------------------
+
+def _upload_key(f) -> str:
+    return "" if f is None else str(getattr(f, "file_id", None) or f"{f.name}:{f.size}")
+
+
 if orders_raw:
-    from core.excel_loader import orders_to_table, fleet_to_table
-    with st.expander("Loaded orders and fleet", expanded=orders_file is not None):
+    from core.excel_loader import (
+        NEED_COLUMNS, build_template, fleet_from_table, fleet_to_table,
+        orders_from_table, orders_to_table,
+    )
+    from core.schema import VALID_SLOTS
+    from core.data_validator import KNOWN_VEHICLE_TYPES
+
+    with data_area:
+        st.subheader("Orders and vehicles")
         try:
-            c1, c2 = st.columns([3, 2])
-            c1.caption("Orders")
-            c1.dataframe(orders_to_table(orders_raw), hide_index=True)
-            c2.caption("Fleet" + ("" if uploaded_fleet or sheet_fleet or orders_file is None
-                                  else " (default — no fleet uploaded)"))
-            c2.dataframe(fleet_to_table(fleet_raw), hide_index=True)
+            orders_table = orders_to_table(orders_raw, checkboxes=True)
+            fleet_table = fleet_to_table(fleet_raw, checkboxes=True)
         except Exception:
             # Malformed JSON records: the pipeline's data validator reports the details
+            orders_table = fleet_table = None
             st.json({"orders": orders_raw, "fleet": fleet_raw})
+
+    if orders_table is not None:
+        with data_area:
+            st.caption("Click a cell to change it. Add rows at the bottom of a table; select rows "
+                       "to delete them. Planning uses the tables exactly as shown.")
+            slot_col = st.column_config.SelectboxColumn(options=VALID_SLOTS)
+            # A new upload gets fresh tables; otherwise edits persist across reruns
+            orders_key = _upload_key(orders_file) or "example"
+            st.caption("Orders")
+            orders_df = st.data_editor(
+                orders_table, key=f"orders_editor_{orders_key}",
+                num_rows="dynamic", hide_index=True,
+                column_config={
+                    "Order ID": st.column_config.TextColumn(required=True),
+                    "Weight (kg)": st.column_config.NumberColumn(min_value=0, required=True),
+                    "Deadline": slot_col, "Earliest": slot_col, "Latest": slot_col,
+                    "Priority": st.column_config.SelectboxColumn(
+                        options=["Normal", "Urgent"], default="Normal"),
+                    **{c: st.column_config.CheckboxColumn(default=False) for c in NEED_COLUMNS},
+                },
+            )
+            st.caption("Fleet" + ("" if uploaded_fleet or sheet_fleet or orders_file is None
+                                  else " (default — no fleet uploaded)"))
+            fleet_df = st.data_editor(
+                fleet_table, key=f"fleet_editor_{orders_key}_{_upload_key(fleet_file)}",
+                num_rows="dynamic", hide_index=True,
+                column_config={
+                    "Vehicle ID": st.column_config.TextColumn(required=True),
+                    "Capacity (kg)": st.column_config.NumberColumn(min_value=0, required=True),
+                    "Type": st.column_config.SelectboxColumn(
+                        options=sorted(t.capitalize() for t in KNOWN_VEHICLE_TYPES),
+                        default="Normal"),
+                    **{s: st.column_config.CheckboxColumn(default=False) for s in VALID_SLOTS},
+                },
+            )
+
+            edited_orders, order_errors = orders_from_table(orders_df, first_row=1)
+            edited_fleet, fleet_errors = fleet_from_table(fleet_df, first_row=1)
+            if order_errors or fleet_errors:
+                st.error("Please fix the tables:\n- " + "\n- ".join(order_errors + fleet_errors))
+                orders_raw = None
+            else:
+                orders_raw, fleet_raw = edited_orders, edited_fleet
+                st.download_button(
+                    "Download these tables as Excel", data=build_template(orders_raw, fleet_raw, is_example=False),
+                    file_name="dispatch_data.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+
+if (run_plan or run_compare or run_replan) and not orders_raw:
+    st.error("Fix the order and fleet data above before planning.")
 
 # ---------------------------------------------------------------------------
 # Plan
