@@ -28,6 +28,7 @@ from core.schema import (
     TimeWindowConstraint,
     UrgentDeliveryConstraint,
     ChangeDeadlineConstraint,
+    TimeWindowConstraint,
 )
 
 
@@ -72,7 +73,13 @@ def solve(
     if timeout_ms is not None:
         s.set("timeout", timeout_ms)
 
+    label_counts: dict[str, int] = {}
+
     def track(constraint: BoolRef, label: str) -> None:
+        # Repeated instructions (e.g. a replan restating the original request) reuse a label
+        label_counts[label] = label_counts.get(label, 0) + 1
+        if label_counts[label] > 1:
+            label = f"{label}_{label_counts[label]}"
         s.assert_and_track(constraint, Bool(label))  # type: ignore[attr-defined]
 
     # --- R1: every order assigned exactly once ---
@@ -197,6 +204,14 @@ def solve(
         elif isinstance(uc, UrgentDeliveryConstraint):
             if uc.order in order_ids and uc.deadline in slots:
                 track(slot_term(uc.order) <= _slot_index(uc.deadline), f"USER_urgent_{uc.order}")
+
+        elif isinstance(uc, TimeWindowConstraint):
+            if uc.order in order_ids and uc.earliest in slots and uc.latest in slots:
+                track(
+                    And(slot_term(uc.order) >= _slot_index(uc.earliest),
+                        slot_term(uc.order) <= _slot_index(uc.latest)),
+                    f"USER_window_{uc.order}_{uc.earliest}_{uc.latest}",
+                )
 
     t0 = time.perf_counter()
     outcome = s.check()

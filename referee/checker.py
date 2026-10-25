@@ -161,4 +161,18 @@ def check_plan(
             if uc.order in plan and slot_idx[slot_of(uc.order)] > slot_idx[uc.deadline]:
                 violations.append(f"USER urgent: order {uc.order} must leave by {uc.deadline}")
 
+        elif isinstance(uc, VehicleUnavailableConstraint):
+            for oid, (vid, slot) in plan.items():
+                if vid == uc.vehicle and slot == uc.slot:
+                    violations.append(f"R8/USER: vehicle {vid} unavailable at {slot} (order {oid})")
+
+        elif isinstance(uc, TimeWindowConstraint):
+            if uc.order in plan:
+                s = slot_idx[slot_of(uc.order)]
+                if s < slot_idx[uc.earliest] or s > slot_idx[uc.latest]:
+                    violations.append(
+                        f"USER window: order {uc.order} must leave between {uc.earliest} "
+                        f"and {uc.latest} (dispatched {slot_of(uc.order)})"
+                    )
+
     return CheckResult(valid=len(violations) == 0, violations=violations)

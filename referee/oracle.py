@@ -68,6 +68,23 @@ def ortools_oracle(
             for t in slots:
                 x[(o.id, v.id, t)] = model.new_bool_var(f"x_{o.id}_{v.id}_{t}")
 
+    # Same rule semantics as core/solver.py and referee/checker.py, written independently.
+    from core.schema import (
+        PrecedenceConstraint, ForbiddenVehicleConstraint, RequiredVehicleConstraint,
+        ForbiddenSlotConstraint, VehicleUnavailableConstraint, DeadlineConstraint,
+        TimeWindowConstraint, UrgentDeliveryConstraint, ChangeDeadlineConstraint,
+    )
+
+    # CP-SAT is integer-only: weights and capacities in hundredths of a kg
+    W = {o.id: round(o.weight * 100) for o in orders}
+    C = {v.id: round(v.capacity * 100) for v in vehicles}
+
+    def load(vid: str, t: str) -> cp_model.LinearExprT:
+        return sum(W[o.id] * x[(o.id, vid, t)] for o in orders)
+
+    def slot_var(oid: str) -> cp_model.LinearExprT:
+        return sum(slot_idx[t] * x[(oid, v.id, t)] for v in vehicles for t in slots)
+
     # R1
     for o in orders:
         model.add_exactly_one(x[(o.id, v.id, t)] for v in vehicles for t in slots)
@@ -75,22 +92,7 @@ def ortools_oracle(
     # R2
     for v in vehicles:
         for t in slots:
-            model.add(
-                sum(int(o.weight) * x[(o.id, v.id, t)] for o in orders) <= int(v.capacity)
-            )
-
-    # R9: fragile handling (CP-SAT is integer-only, so compare 100 * load to percent * capacity)
-    pct = round(FRAGILE_MAX_LOAD * 100)
-    for f in (o for o in orders if "fragile" in o.needs):
-        for v in vehicles:
-            for t in slots:
-                model.add(
-                    sum(100 * int(o.weight) * x[(o.id, v.id, t)] for o in orders)
-                    <= pct * int(v.capacity)
-                ).only_enforce_if(x[(f.id, v.id, t)])
-                for g in orders:
-                    if g.id != f.id and "oversized" in g.needs:
-                        model.add(x[(f.id, v.id, t)] + x[(g.id, v.id, t)] <= 1)
+            model.add(load(v.id, t) <= C[v.id])
 
     # R3
     for o in orders:
@@ -99,13 +101,20 @@ def ortools_oracle(
                 if t not in v.available_slots:
                     model.add(x[(o.id, v.id, t)] == 0)
 
-    # R4
+    # R4: a dispatcher DEADLINE / CHANGE_DEADLINE replaces the order's own deadline and window
+    deadline_overrides: dict[str, str] = {}
+    for uc in gold_constraints:
+        if isinstance(uc, ChangeDeadlineConstraint):
+            deadline_overrides[uc.order] = uc.new_deadline
+        elif isinstance(uc, DeadlineConstraint):
+            deadline_overrides[uc.order] = uc.slot
     for o in orders:
+        deadline = deadline_overrides.get(o.id, o.deadline)
         for v in vehicles:
             for t in slots:
-                if o.deadline and slot_idx[t] > slot_idx[o.deadline]:
+                if deadline and slot_idx[t] > slot_idx[deadline]:
                     model.add(x[(o.id, v.id, t)] == 0)
-                if o.time_window:
+                if o.time_window and o.id not in deadline_overrides:
                     early, late = o.time_window
                     if slot_idx[t] < slot_idx[early] or slot_idx[t] > slot_idx[late]:
                         model.add(x[(o.id, v.id, t)] == 0)
@@ -120,16 +129,22 @@ def ortools_oracle(
                     for t in slots:
                         model.add(x[(o.id, v.id, t)] == 0)
 
+    # R6: an urgent order's own deadline holds even if a change request extends it
+    for o in orders:
+        if o.priority == "urgent" and o.deadline:
+            model.add(slot_var(o.id) <= slot_idx[o.deadline])
+
+    # R9: fragile handling (100 * load <= percent * capacity keeps it integer)
+    pct = round(FRAGILE_MAX_LOAD * 100)
+    for f in (o for o in orders if "fragile" in o.needs):
+        for v in vehicles:
+            for t in slots:
+                model.add(100 * load(v.id, t) <= pct * C[v.id]).only_enforce_if(x[(f.id, v.id, t)])
+                for g in orders:
+                    if g.id != f.id and "oversized" in g.needs:
+                        model.add(x[(f.id, v.id, t)] + x[(g.id, v.id, t)] <= 1)
+
     # Gold user constraints
-    from core.schema import (
-        PrecedenceConstraint, ForbiddenVehicleConstraint, RequiredVehicleConstraint,
-        ForbiddenSlotConstraint, VehicleUnavailableConstraint,
-        DeadlineConstraint, UrgentDeliveryConstraint, ChangeDeadlineConstraint,
-    )
-
-    def slot_var(oid: str) -> cp_model.LinearExprT:
-        return sum(slot_idx[t] * x[(oid, v.id, t)] for v in vehicles for t in slots)
-
     for uc in gold_constraints:
         if isinstance(uc, PrecedenceConstraint):
             model.add(slot_var(uc.before) < slot_var(uc.after))
@@ -141,6 +156,12 @@ def ortools_oracle(
         elif isinstance(uc, ForbiddenSlotConstraint):
             for v in vehicles:
                 model.add(x[(uc.order, v.id, uc.slot)] == 0)
+        elif isinstance(uc, VehicleUnavailableConstraint):
+            for o in orders:
+                model.add(x[(o.id, uc.vehicle, uc.slot)] == 0)
+        elif isinstance(uc, TimeWindowConstraint):
+            model.add(slot_var(uc.order) >= slot_idx[uc.earliest])
+            model.add(slot_var(uc.order) <= slot_idx[uc.latest])
         elif isinstance(uc, (DeadlineConstraint, ChangeDeadlineConstraint)):
             dl = uc.slot if isinstance(uc, DeadlineConstraint) else uc.new_deadline
             model.add(slot_var(uc.order) <= slot_idx[dl])
