@@ -9,3 +9,4 @@ build/
 logs/
 # results/   # kept in repo for reproducibility
 .DS_Store
+.claude/settings.local.json
