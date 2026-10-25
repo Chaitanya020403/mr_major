@@ -92,8 +92,12 @@ streamlit run app.py
 # 5. Run a single planning scenario from the command line
 python -m experiments.run --case data/cases/case_000 --method both
 
-# 6. Experiment B: replanning after a vehicle outage (no LLM needed)
+# 6. Experiment A (both methods, needs an API key) and B (replanning, no LLM)
+python -m experiments.run --generate --n 20 --method both --out results/exp_a.jsonl
 python -m experiments.replan --n 20 --out results/exp_b.jsonl
+
+# 7. Experiments C–F and the plots (only C needs an API key)
+python -m experiments.reproduce all
 ```
 
 ---

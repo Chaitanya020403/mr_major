@@ -1,7 +1,7 @@
 """
 Experiment F — Rule ablation.
 
-For each rule in {R1…R8}, removes all constraints for that rule across a set of
+For each rule in {R2…R9}, removes all constraints for that rule across a set of
 scenarios and re-solves. Measures how often removing a rule changes the outcome
 (UNSAT → SAT or a different plan).
 """
@@ -17,7 +17,7 @@ from core.solver import solve, SolverResult
 
 logger = logging.getLogger(__name__)
 
-ABLATABLE_RULES = ["R2", "R3", "R4", "R5", "R6", "R7", "R8"]
+ABLATABLE_RULES = ["R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9"]
 
 
 def _solve_without_rule(
@@ -51,8 +51,12 @@ def _solve_without_rule(
             o.deadline = None
             o.time_window = None
     elif rule == "R5":
+        from core.schema import VEHICLE_TYPE_NEEDS
         for o in patched_orders:
-            o.needs = []
+            o.needs = [n for n in o.needs if n not in VEHICLE_TYPE_NEEDS]
+    elif rule == "R9":
+        for o in patched_orders:
+            o.needs = [n for n in o.needs if n != "fragile"]
     elif rule == "R6":
         for o in patched_orders:
             if o.priority == "urgent":
