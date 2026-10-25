@@ -15,8 +15,8 @@ from pydantic import ValidationError
 
 from core.schema import Order, Vehicle, VALID_SLOTS
 
-KNOWN_VEHICLE_TYPES = {"normal", "refrigerated", "heavy"}
-KNOWN_ORDER_NEEDS = {"refrigerated", "heavy", "fragile"}
+KNOWN_VEHICLE_TYPES = {"normal", "refrigerated", "oversized"}
+KNOWN_ORDER_NEEDS = {"refrigerated", "oversized", "fragile"}
 
 
 class ValidationResult:

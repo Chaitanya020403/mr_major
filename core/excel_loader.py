@@ -6,7 +6,7 @@ orders.json and fleet.json, so data_validator, solver and referee are unchanged.
 Also builds the downloadable template workbook.
 
 Orders sheet columns:
-    Order ID | Weight (kg) | Deadline | Earliest | Latest | Priority | Refrigerated | Heavy
+    Order ID | Weight (kg) | Deadline | Earliest | Latest | Priority | Refrigerated | Oversized
 Fleet sheet columns:
     Vehicle ID | Capacity (kg) | Type | 9AM | 11AM | 1PM | 3PM
 """
@@ -25,10 +25,10 @@ from core.data_validator import KNOWN_VEHICLE_TYPES, KNOWN_ORDER_NEEDS
 
 
 ORDER_COLUMNS = ["Order ID", "Weight (kg)", "Deadline", "Earliest", "Latest", "Priority",
-                 "Refrigerated", "Heavy"]
+                 "Refrigerated", "Oversized"]
 FLEET_COLUMNS = ["Vehicle ID", "Capacity (kg)", "Type"] + VALID_SLOTS
 # Only needs some vehicle type can satisfy (R5 matches need == vehicle type); "fragile" has none
-NEED_COLUMNS = {"Refrigerated": "refrigerated", "Heavy": "heavy"}
+NEED_COLUMNS = {"Refrigerated": "refrigerated", "Oversized": "oversized"}
 assert set(NEED_COLUMNS.values()) <= KNOWN_ORDER_NEEDS & KNOWN_VEHICLE_TYPES
 
 # Alternative header spellings people are likely to type (compared after _norm_header)
@@ -37,6 +37,7 @@ _HEADER_ALIASES = {
     "weight": "Weight (kg)", "weightkg": "Weight (kg)", "kg": "Weight (kg)",
     "earliesttime": "Earliest", "from": "Earliest", "latesttime": "Latest", "to": "Latest",
     "fridge": "Refrigerated", "needsfridge": "Refrigerated", "cold": "Refrigerated",
+    "heavy": "Oversized", "bulky": "Oversized",
     "vehicle": "Vehicle ID", "truck": "Vehicle ID", "truckid": "Vehicle ID",
     "capacity": "Capacity (kg)", "capacitykg": "Capacity (kg)", "vehicletype": "Type",
 }
@@ -44,7 +45,8 @@ _HEADER_ALIASES = {
 _HOUR_TO_SLOT = {9: "9AM", 11: "11AM", 13: "1PM", 15: "3PM"}
 _YES = {"yes", "y", "true", "1", "x", "✓", "✔", "available"}
 _NO = {"no", "n", "false", "0", "-", "unavailable"}
-_VEHICLE_TYPE_ALIASES = {"fridge": "refrigerated", "cold": "refrigerated", "reefer": "refrigerated"}
+_VEHICLE_TYPE_ALIASES = {"fridge": "refrigerated", "cold": "refrigerated", "reefer": "refrigerated",
+                         "heavy": "oversized", "bulky": "oversized"}
 
 ORDERS_SHEET = "Orders"
 FLEET_SHEET = "Fleet"
@@ -419,10 +421,10 @@ HOW_TO_LINES = [
     "  Deadline: the latest time the order may be delivered (optional).",
     "  Earliest / Latest: the time window the customer can receive it (optional; fill both or neither).",
     "  Priority: Normal or Urgent.",
-    "  Refrigerated / Heavy: Yes if the order must go on a Refrigerated / Heavy vehicle.",
+    "  Refrigerated / Oversized: Yes if the order must go on a Refrigerated / Oversized vehicle.",
     "FLEET sheet: one row per vehicle. If you delete this sheet, the app's default fleet is used.",
     "  Vehicle ID: e.g. T1. Capacity (kg): the most it can carry in one trip.",
-    "  Type: Normal, Refrigerated or Heavy.",
+    "  Type: Normal, Refrigerated or Oversized.",
     f"  {' / '.join(VALID_SLOTS)}: Yes if the vehicle is available at that time.",
     "Then upload this file in the app and type your instructions in plain English.",
 ]
