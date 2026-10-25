@@ -156,8 +156,8 @@ def plots(results: Path) -> None:
     out = results / "plots"
     out.mkdir(parents=True, exist_ok=True)
     for name, key, png, title in [
-        ("exp_e_tightness.jsonl", "tightness", "tightness_curve.png", "Feasibility rate vs tightness"),
-        ("exp_e_fridge.jsonl", "fridge_fraction", "fridge_curve.png", "Feasibility rate vs fridge fraction"),
+        ("exp_e_tightness.jsonl", "tightness", "tightness_curve.png", "Feasibility rate vs capacity tightness"),
+        ("exp_e_fridge.jsonl", "fridge_fraction", "fridge_curve.png", "Feasibility rate vs refrigeration fraction"),
     ]:
         sweep = [SweepResult(key, r[key], r["feasible"], r["total"]) for r in read(name)]
         plot_feasibility_curve(sweep, out / png, title=title)

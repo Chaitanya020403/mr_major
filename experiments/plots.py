@@ -76,7 +76,7 @@ def plot_core_frequency(
     if not counts:
         return
 
-    labels_sorted = sorted(counts, key=lambda k: -counts[k])
+    labels_sorted = sorted(counts, key=lambda k: (-counts[k], k))   # ties alphabetical, stable
     vals = [counts[k] for k in labels_sorted]
 
     plt.figure()
