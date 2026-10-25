@@ -5,6 +5,7 @@
 {"case": "seed_0", "rule": "R6", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_0", "rule": "R7", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_0", "rule": "R8", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
+{"case": "seed_0", "rule": "R9", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_1", "rule": "R2", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_1", "rule": "R3", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_1", "rule": "R4", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
@@ -12,6 +13,7 @@
 {"case": "seed_1", "rule": "R6", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_1", "rule": "R7", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_1", "rule": "R8", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
+{"case": "seed_1", "rule": "R9", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_2", "rule": "R2", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_2", "rule": "R3", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_2", "rule": "R4", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
@@ -19,6 +21,7 @@
 {"case": "seed_2", "rule": "R6", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_2", "rule": "R7", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_2", "rule": "R8", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
+{"case": "seed_2", "rule": "R9", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_3", "rule": "R2", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_3", "rule": "R3", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_3", "rule": "R4", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
@@ -26,6 +29,7 @@
 {"case": "seed_3", "rule": "R6", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_3", "rule": "R7", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_3", "rule": "R8", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
+{"case": "seed_3", "rule": "R9", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_4", "rule": "R2", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_4", "rule": "R3", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_4", "rule": "R4", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
@@ -33,6 +37,7 @@
 {"case": "seed_4", "rule": "R6", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_4", "rule": "R7", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_4", "rule": "R8", "orig_feasible": false, "ablated_feasible": true, "flipped": true}
+{"case": "seed_4", "rule": "R9", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_5", "rule": "R2", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_5", "rule": "R3", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_5", "rule": "R4", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
@@ -40,6 +45,7 @@
 {"case": "seed_5", "rule": "R6", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_5", "rule": "R7", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_5", "rule": "R8", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
+{"case": "seed_5", "rule": "R9", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_6", "rule": "R2", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_6", "rule": "R3", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_6", "rule": "R4", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
@@ -47,6 +53,7 @@
 {"case": "seed_6", "rule": "R6", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_6", "rule": "R7", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_6", "rule": "R8", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
+{"case": "seed_6", "rule": "R9", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_7", "rule": "R2", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_7", "rule": "R3", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_7", "rule": "R4", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
@@ -54,6 +61,7 @@
 {"case": "seed_7", "rule": "R6", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_7", "rule": "R7", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_7", "rule": "R8", "orig_feasible": false, "ablated_feasible": true, "flipped": true}
+{"case": "seed_7", "rule": "R9", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_8", "rule": "R2", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_8", "rule": "R3", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_8", "rule": "R4", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
@@ -61,6 +69,7 @@
 {"case": "seed_8", "rule": "R6", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_8", "rule": "R7", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_8", "rule": "R8", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
+{"case": "seed_8", "rule": "R9", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_9", "rule": "R2", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_9", "rule": "R3", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_9", "rule": "R4", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
@@ -68,6 +77,7 @@
 {"case": "seed_9", "rule": "R6", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_9", "rule": "R7", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_9", "rule": "R8", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
+{"case": "seed_9", "rule": "R9", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_10", "rule": "R2", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_10", "rule": "R3", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_10", "rule": "R4", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
@@ -75,6 +85,7 @@
 {"case": "seed_10", "rule": "R6", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_10", "rule": "R7", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_10", "rule": "R8", "orig_feasible": false, "ablated_feasible": true, "flipped": true}
+{"case": "seed_10", "rule": "R9", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_11", "rule": "R2", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_11", "rule": "R3", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_11", "rule": "R4", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
@@ -82,6 +93,7 @@
 {"case": "seed_11", "rule": "R6", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_11", "rule": "R7", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_11", "rule": "R8", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
+{"case": "seed_11", "rule": "R9", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_12", "rule": "R2", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_12", "rule": "R3", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_12", "rule": "R4", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
@@ -89,6 +101,7 @@
 {"case": "seed_12", "rule": "R6", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_12", "rule": "R7", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_12", "rule": "R8", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
+{"case": "seed_12", "rule": "R9", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_13", "rule": "R2", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_13", "rule": "R3", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_13", "rule": "R4", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
@@ -96,6 +109,7 @@
 {"case": "seed_13", "rule": "R6", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_13", "rule": "R7", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_13", "rule": "R8", "orig_feasible": false, "ablated_feasible": true, "flipped": true}
+{"case": "seed_13", "rule": "R9", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_14", "rule": "R2", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_14", "rule": "R3", "orig_feasible": false, "ablated_feasible": true, "flipped": true}
 {"case": "seed_14", "rule": "R4", "orig_feasible": false, "ablated_feasible": true, "flipped": true}
@@ -103,6 +117,7 @@
 {"case": "seed_14", "rule": "R6", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_14", "rule": "R7", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_14", "rule": "R8", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
+{"case": "seed_14", "rule": "R9", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_15", "rule": "R2", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_15", "rule": "R3", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_15", "rule": "R4", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
@@ -110,6 +125,7 @@
 {"case": "seed_15", "rule": "R6", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_15", "rule": "R7", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_15", "rule": "R8", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
+{"case": "seed_15", "rule": "R9", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_16", "rule": "R2", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_16", "rule": "R3", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_16", "rule": "R4", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
@@ -117,6 +133,7 @@
 {"case": "seed_16", "rule": "R6", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_16", "rule": "R7", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_16", "rule": "R8", "orig_feasible": false, "ablated_feasible": true, "flipped": true}
+{"case": "seed_16", "rule": "R9", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_17", "rule": "R2", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_17", "rule": "R3", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_17", "rule": "R4", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
@@ -124,6 +141,7 @@
 {"case": "seed_17", "rule": "R6", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_17", "rule": "R7", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_17", "rule": "R8", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
+{"case": "seed_17", "rule": "R9", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_18", "rule": "R2", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_18", "rule": "R3", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_18", "rule": "R4", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
@@ -131,6 +149,7 @@
 {"case": "seed_18", "rule": "R6", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_18", "rule": "R7", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_18", "rule": "R8", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
+{"case": "seed_18", "rule": "R9", "orig_feasible": true, "ablated_feasible": true, "flipped": false}
 {"case": "seed_19", "rule": "R2", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_19", "rule": "R3", "orig_feasible": false, "ablated_feasible": true, "flipped": true}
 {"case": "seed_19", "rule": "R4", "orig_feasible": false, "ablated_feasible": true, "flipped": true}
@@ -138,3 +157,4 @@
 {"case": "seed_19", "rule": "R6", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_19", "rule": "R7", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
 {"case": "seed_19", "rule": "R8", "orig_feasible": false, "ablated_feasible": true, "flipped": true}
+{"case": "seed_19", "rule": "R9", "orig_feasible": false, "ablated_feasible": false, "flipped": false}
