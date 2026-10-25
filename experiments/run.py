@@ -117,8 +117,16 @@ def run_case(case_dir: Path, method: str, provider: str, model: str | None) -> d
     case = load_case(case_dir)
 
     from core.data_validator import validate_orders, validate_fleet
+    from experiments.generator import LabelDisagreement, ground_truth_feasible
     orders, _ = validate_orders(case["orders_raw"])
     vehicles, _ = validate_fleet(case["fleet_raw"])
+
+    # Hand-written cases carry their own label.json; hold it to the same referee standard
+    if ground_truth_feasible(orders, vehicles, case["gold_raw"]) != case["label"]["feasible"]:
+        raise LabelDisagreement(
+            f"{case_dir}/label.json says feasible={case['label']['feasible']}, "
+            "but the OR-Tools oracle and Z3 both say otherwise"
+        )
 
     output: dict[str, Any] = {"case": str(case_dir)}
 

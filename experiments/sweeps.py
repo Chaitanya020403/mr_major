@@ -9,9 +9,6 @@ from dataclasses import dataclass
 from typing import Any
 
 from experiments.generator import GeneratorConfig, generate, Scenario
-from core.data_validator import validate_orders, validate_fleet
-from core.json_validator import validate_constraints
-from core.solver import solve
 
 
 @dataclass
@@ -40,11 +37,8 @@ def sweep_tightness(
             family = families[i % len(families)]
             cfg = GeneratorConfig(tightness=tightness, seed=base_seed + i, family=family)
             scenario = generate(cfg)
-            orders, _ = validate_orders([o.model_dump() for o in scenario.orders])
-            vehicles, _ = validate_fleet([v.model_dump() for v in scenario.vehicles])
-            gc = validate_constraints(scenario.gold_constraints, orders, vehicles)
-            r = solve(orders, vehicles, gc.constraints)
-            if r.feasible:
+            # Label is set by the OR-Tools oracle and cross-checked against Z3 in generate()
+            if scenario.label["feasible"]:
                 n_feasible += 1
         results.append(SweepResult("tightness", tightness, n_feasible, n_per_point))
     return results
@@ -64,11 +58,8 @@ def sweep_fridge_fraction(
             family = families[i % len(families)]
             cfg = GeneratorConfig(fridge_fraction=ff, seed=base_seed + i, family=family)
             scenario = generate(cfg)
-            orders, _ = validate_orders([o.model_dump() for o in scenario.orders])
-            vehicles, _ = validate_fleet([v.model_dump() for v in scenario.vehicles])
-            gc = validate_constraints(scenario.gold_constraints, orders, vehicles)
-            r = solve(orders, vehicles, gc.constraints)
-            if r.feasible:
+            # Label is set by the OR-Tools oracle and cross-checked against Z3 in generate()
+            if scenario.label["feasible"]:
                 n_feasible += 1
         results.append(SweepResult("fridge_fraction", ff, n_feasible, n_per_point))
     return results

@@ -25,6 +25,33 @@ def _is_feasible(orders: list[Order], vehicles: list[Vehicle], gold: list[dict])
     return solve(orders, vehicles, cv.constraints).feasible
 
 
+class LabelDisagreement(RuntimeError):
+    """The Z3 solver (system under test) and the OR-Tools oracle (referee) disagree."""
+
+
+def ground_truth_feasible(orders: list[Order], vehicles: list[Vehicle], gold: list[dict]) -> bool:
+    """
+    Feasibility label from the independent OR-Tools oracle, cross-checked against Z3.
+
+    Labels must not come from the solver being evaluated alone. A disagreement means a
+    rule is encoded differently in the two, so stop rather than write a wrong label.
+    """
+    from core.json_validator import validate_constraints
+    from core.solver import solve
+    from referee.oracle import ortools_oracle
+    cv = validate_constraints(gold, orders, vehicles)
+    if not cv.ok:
+        return False
+    oracle_feasible, _ = ortools_oracle(orders, vehicles, cv.constraints)
+    z3_feasible = solve(orders, vehicles, cv.constraints).feasible
+    if oracle_feasible != z3_feasible:
+        raise LabelDisagreement(
+            f"OR-Tools says feasible={oracle_feasible}, Z3 says feasible={z3_feasible} "
+            f"for orders {[o.id for o in orders]} with gold constraints {gold}"
+        )
+    return oracle_feasible
+
+
 @dataclass
 class GeneratorConfig:
     n_orders: int = 8
@@ -179,8 +206,8 @@ def generate(cfg: GeneratorConfig) -> Scenario:
         if not planted:
             label = {"feasible": True, "conflict": None}
 
-    # Final truth check — correct the label if solver disagrees
-    actual_feasible = _is_feasible(orders, vehicles, gold)
+    # Final truth check — the referee's oracle sets the label (planting above only guides it)
+    actual_feasible = ground_truth_feasible(orders, vehicles, gold)
     if actual_feasible != label["feasible"]:
         label = {"feasible": actual_feasible, "conflict": None}
 
