@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from core.schema import Order, Vehicle, VALID_SLOTS
+from core.schema import Order, Vehicle, VALID_SLOTS, VEHICLE_TYPE_NEEDS
 
 
 def _is_feasible(orders: list[Order], vehicles: list[Vehicle], gold: list[dict]) -> bool:
@@ -59,6 +59,10 @@ class GeneratorConfig:
     n_slots: int = 4
     tightness: float = 0.7        # total_weight / total_capacity target
     fridge_fraction: float = 0.25 # fraction of orders needing refrigeration
+    # Both default to 0 so scenarios (and stored results) from earlier runs are unchanged:
+    # with 0 the generator makes exactly the same random draws as before.
+    oversized_fraction: float = 0.0  # fraction of orders needing the oversized vehicle (last one)
+    fragile_fraction: float = 0.0    # fraction of orders that are fragile (R9)
     precedence_chain: int = 2     # number of precedence pairs
     seed: int = 42
     family: str = "feasible"      # feasible | planted_infeasible | barely_feasible |
@@ -84,11 +88,15 @@ def generate(cfg: GeneratorConfig) -> Scenario:
     # Build vehicles
     vehicles: list[Vehicle] = []
     has_fridge = False
+    has_oversized = False
     for i in range(cfg.n_vehicles):
         is_fridge = (i == 0 and cfg.fridge_fraction > 0)
-        vtype = "refrigerated" if is_fridge else "normal"
+        is_oversized = (i == cfg.n_vehicles - 1 and not is_fridge and cfg.oversized_fraction > 0)
+        vtype = "refrigerated" if is_fridge else "oversized" if is_oversized else "normal"
         if is_fridge:
             has_fridge = True
+        if is_oversized:
+            has_oversized = True
         cap = rng.randint(80, 150)
         avail = rng.sample(slots, k=rng.randint(max(1, len(slots)-1), len(slots)))
         vehicles.append(Vehicle(
@@ -106,16 +114,24 @@ def generate(cfg: GeneratorConfig) -> Scenario:
         weight_remaining -= w
         needs_fridge = has_fridge and rng.random() < cfg.fridge_fraction
         dl_slot = rng.choice(slots)
+        priority = rng.choice(["normal", "normal", "normal", "urgent"])
+        needs = ["refrigerated"] if needs_fridge else []
+        # Extra draws only when enabled, so the random stream is unchanged otherwise.
+        # An order can need only one vehicle type, so fridge orders are never oversized.
+        if has_oversized and rng.random() < cfg.oversized_fraction and not needs_fridge:
+            needs.append("oversized")
+        if cfg.fragile_fraction > 0 and rng.random() < cfg.fragile_fraction:
+            needs.append("fragile")
         orders.append(Order(
             id=chr(ord("A") + i),
             weight=float(w),
             deadline=dl_slot,
-            priority=rng.choice(["normal", "normal", "normal", "urgent"]),
-            needs=["refrigerated"] if needs_fridge else [],
+            priority=priority,
+            needs=needs,
         ))
 
     # If the base data is already infeasible (e.g. no fridge vehicle for fridge orders),
-    # drop the fridge requirement so the scenario stays solvable.
+    # drop the special needs so the scenario stays solvable.
     if not _is_feasible(orders, vehicles, []):
         for o in orders:
             o.needs = []
@@ -138,11 +154,45 @@ def generate(cfg: GeneratorConfig) -> Scenario:
     label = {"feasible": True, "conflict": None}
 
     if cfg.family == "planted_infeasible":
+        planted = False
+
+        # Strategy 0 (only with fragile orders): pin a fragile order and a partner to the
+        # same vehicle and slot so that R9 alone breaks it — the partner is oversized, or
+        # the pair fits the vehicle's capacity but not the fragile load limit
+        if cfg.fragile_fraction > 0:
+            from copy import deepcopy
+            without_fragile = deepcopy(orders)
+            for o in without_fragile:
+                o.needs = [n for n in o.needs if n != "fragile"]
+            for f in (o for o in orders if "fragile" in o.needs):
+                for v in vehicles:
+                    t = v.available_slots[0]
+                    for h in orders:
+                        if h.id == f.id:
+                            continue
+                        trial = gold + [
+                            {"type": "REQUIRED_VEHICLE", "order": f.id, "vehicle": v.id, "source": f"use {v.id} for {f.id}"},
+                            {"type": "REQUIRED_VEHICLE", "order": h.id, "vehicle": v.id, "source": f"use {v.id} for {h.id}"},
+                            {"type": "DEADLINE", "order": f.id, "slot": t, "source": f"{f.id} must leave by {t}"},
+                            {"type": "DEADLINE", "order": h.id, "slot": t, "source": f"{h.id} must leave by {t}"},
+                        ]
+                        if not _is_feasible(orders, vehicles, trial) and _is_feasible(without_fragile, vehicles, trial):
+                            gold = trial
+                            label = {
+                                "feasible": False,
+                                "conflict": {"orders": [f.id, h.id], "vehicles": [v.id], "rules": ["R9"]},
+                            }
+                            planted = True
+                            break
+                    if planted:
+                        break
+                if planted:
+                    break
+
         # Strategy 1: forbid the only fridge vehicle from fridge orders
         fridge_orders = [o for o in orders if "refrigerated" in o.needs]
         fridge_vehicles = [v for v in vehicles if v.type == "refrigerated"]
-        planted = False
-        if fridge_orders and fridge_vehicles:
+        if fridge_orders and fridge_vehicles and not planted:
             trial = gold + [
                 {"type": "FORBIDDEN_VEHICLE", "order": fo.id, "vehicle": fv.id, "source": f"no {fv.id} for {fo.id}"}
                 for fo in fridge_orders for fv in fridge_vehicles
@@ -163,7 +213,7 @@ def generate(cfg: GeneratorConfig) -> Scenario:
         if not planted:
             for o in orders:
                 compatible = [v for v in vehicles
-                              if (not o.needs or o.needs[0] in v.type)
+                              if all(n in v.type for n in o.needs if n in VEHICLE_TYPE_NEEDS)
                               and any(
                                   (not o.deadline or slots.index(t) <= slots.index(o.deadline))
                                   for t in v.available_slots
@@ -234,6 +284,8 @@ def _gold_to_request(gold: list[dict], rng: random.Random) -> str:
             parts.append(f"don't put {g['order']} on {g['vehicle']}")
         elif g["type"] == "REQUIRED_VEHICLE":
             parts.append(f"use {g['vehicle']} for {g['order']}")
+        elif g["type"] == "DEADLINE":
+            parts.append(f"{g['order']} must leave by {g['slot']}")
     if not parts:
         return "No special instructions today."
     return "; ".join(parts) + "."

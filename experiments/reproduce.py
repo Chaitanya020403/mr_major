@@ -11,6 +11,11 @@ Runners for Experiments C–F and the report plots.
 Results go to --out-dir (default results/). Experiment A is experiments.run and
 Experiment B is experiments.replan. Seeds and scenario families match Experiment A
 (seeds 0..19, families cycling) except D, which uses feasible scenarios.
+
+F also runs on "handling" scenarios with fragile and oversized orders
+(exp_f_ablation_handling), so that R9 is exercised. There is no fragile-fraction
+sweep: the generator repairs infeasible base data by dropping special needs, so
+more fragile orders means more repairs and the curve would rise, not fall.
 """
 
 from __future__ import annotations
@@ -35,6 +40,7 @@ SCALING_PER_SIZE = 10
 TIGHTNESS_VALUES = [0.4, 0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95]
 FRIDGE_VALUES = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
 SWEEP_PER_POINT = 30
+HANDLING = {"fragile_fraction": 0.3, "oversized_fraction": 0.25}   # scenarios that exercise R9
 
 
 def _scenario(seed: int, **cfg: Any):
@@ -122,22 +128,22 @@ def exp_e() -> tuple[list[dict], list[dict]]:
 # Experiment F — rule ablation
 # ---------------------------------------------------------------------------
 
-def _ablation_cases() -> list[dict]:
+def _ablation_cases(**cfg: Any) -> list[dict]:
     cases = []
     for seed in range(N_SEEDS):
-        sc = _scenario(seed)
+        sc = _scenario(seed, **cfg)
         gc = validate_constraints(sc.gold_constraints, sc.orders, sc.vehicles).constraints
         cases.append({"name": f"seed_{seed}", "orders": sc.orders, "vehicles": sc.vehicles,
                       "constraints": gc, "original_result": solve(sc.orders, sc.vehicles, gc)})
     return cases
 
 
-def exp_f() -> list[dict]:
+def exp_f(**cfg: Any) -> list[dict]:
     from experiments.ablation import run_ablation
     return [
         {"case": r.case, "rule": r.rule_removed, "orig_feasible": r.original_feasible,
          "ablated_feasible": r.ablated_feasible, "flipped": r.flipped}
-        for r in run_ablation(_ablation_cases())
+        for r in run_ablation(_ablation_cases(**cfg))
     ]
 
 
@@ -161,9 +167,14 @@ def plots(results: Path) -> None:
     ]:
         sweep = [SweepResult(key, r[key], r["feasible"], r["total"]) for r in read(name)]
         plot_feasibility_curve(sweep, out / png, title=title)
-    ablation = [AblationRow(r["case"], r["rule"], r["orig_feasible"], r["ablated_feasible"], r["flipped"])
-                for r in read("exp_f_ablation.jsonl")]
-    plot_ablation_flip_rate(ablation, out / "ablation_flip_rate.png")
+    for name, png, title in [
+        ("exp_f_ablation.jsonl", "ablation_flip_rate.png", "Ablation: flip rate per rule"),
+        ("exp_f_ablation_handling.jsonl", "ablation_flip_rate_handling.png",
+         "Ablation with fragile and oversized orders"),
+    ]:
+        ablation = [AblationRow(r["case"], r["rule"], r["orig_feasible"], r["ablated_feasible"], r["flipped"])
+                    for r in read(name)]
+        plot_ablation_flip_rate(ablation, out / png, title=title)
     # Which rule families appear in the UNSAT cores of the infeasible Exp F scenarios
     cores = [c["original_result"].unsat_core_labels for c in _ablation_cases()
              if not c["original_result"].feasible]
@@ -190,6 +201,7 @@ def main() -> None:
         _write(fridge, out / "exp_e_fridge.jsonl")
     if args.what in ("f", "all"):
         _write(exp_f(), out / "exp_f_ablation.jsonl")
+        _write(exp_f(**HANDLING), out / "exp_f_ablation_handling.jsonl")
     if args.what in ("plots", "all"):
         plots(out)
 
