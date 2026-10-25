@@ -71,6 +71,16 @@ def _show_infeasible(exp, show_conflict: bool = True) -> None:
         st.json(exp.conflict_json)
 
 
+def _data_key(orders_raw, fleet_raw) -> str:
+    return json.dumps([orders_raw, fleet_raw], sort_keys=True)
+
+
+def _remember_plan(result, orders_raw, fleet_raw) -> None:
+    """Keep the latest feasible plan so Replan can change as little as possible."""
+    if result is not None and result.feasible:
+        st.session_state["last_plan"] = {"key": _data_key(orders_raw, fleet_raw), "plan": result.plan}
+
+
 def _show_pipeline_error(err: str) -> None:
     if err.startswith(CLARIFY_PREFIX):
         st.warning(err)
@@ -78,8 +88,12 @@ def _show_pipeline_error(err: str) -> None:
         st.error(err)
 
 
-def _run_pipeline(orders_raw, fleet_raw, request, provider, model, base_request=None):
-    """base_request: for replanning, the original instructions whose constraints still apply."""
+def _run_pipeline(orders_raw, fleet_raw, request, provider, model, base_request=None,
+                  previous_plan=None):
+    """
+    base_request: for replanning, the original instructions whose constraints still apply.
+    previous_plan: for replanning, the plan to stay as close to as possible.
+    """
     from core.data_validator import validate_orders, validate_fleet
     from core.translator import translate
     from core.json_validator import validate_constraints
@@ -109,7 +123,8 @@ def _run_pipeline(orders_raw, fleet_raw, request, provider, model, base_request=
     if not cv.ok:
         return None, raw_json, None, None, f"Constraint validation error:\n{cv}"
 
-    result = solve(orders, vehicles, cv.constraints, timeout_ms=SOLVER_TIMEOUT_MS)
+    result = solve(orders, vehicles, cv.constraints, timeout_ms=SOLVER_TIMEOUT_MS,
+                   previous_plan=previous_plan)
     exp = explain(result, orders, vehicles)
     return orders, raw_json, result, exp, None
 
@@ -338,6 +353,7 @@ if run_plan and orders_raw:
         if exp.feasible:
             st.success(exp.summary)
             st.dataframe(exp.plan_table)
+            _remember_plan(result, orders_raw, fleet_raw)
         else:
             _show_infeasible(exp)
 
@@ -411,9 +427,12 @@ if run_compare and orders_raw:
 # ---------------------------------------------------------------------------
 
 if run_replan and orders_raw:
+    last = st.session_state.get("last_plan")
+    previous = last["plan"] if last and last["key"] == _data_key(orders_raw, fleet_raw) else None
     with st.spinner("Replanning…"):
         orders, raw_json, result, exp, err = _run_pipeline(
-            orders_raw, fleet_raw, change_request, provider, model, base_request=request
+            orders_raw, fleet_raw, change_request, provider, model, base_request=request,
+            previous_plan=previous,
         )
     if err:
         _show_pipeline_error(err)
@@ -421,7 +440,19 @@ if run_replan and orders_raw:
         st.subheader("Replan result")
         if exp.feasible:
             st.success(exp.summary)
+            if previous:
+                kept = sum(1 for oid in result.plan if oid in previous) - result.moved
+                st.info(f"Changed as little as possible: {result.moved} order(s) moved, "
+                        f"{kept} kept their vehicle and time.")
+                for row in exp.plan_table:
+                    before = previous.get(row["order"])
+                    row["change"] = (f"moved from {before[0]} @ {before[1]}"
+                                     if before and before != (row["vehicle"], row["slot"]) else "")
+            else:
+                st.caption("No earlier plan for this data, so this is a fresh plan. "
+                           "Click Plan first to get a replan that changes as little as possible.")
             st.dataframe(exp.plan_table)
+            _remember_plan(result, orders_raw, fleet_raw)
         else:
             _show_infeasible(exp)
         with st.expander("Translated constraints for change"):

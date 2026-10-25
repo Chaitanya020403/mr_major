@@ -3,8 +3,9 @@ Experiment B — Replanning (RQ3).
 
 For each seeded scenario that has a round-1 plan, take T1 out of service in its
 first available slot ("T1 is unavailable at 9AM.") and replan with the original
-gold constraints plus that change. Records whether a plan still exists, how many
-orders changed vehicle or slot, and the round-2 solve time.
+gold constraints plus that change, moving as few orders as possible away from the
+round-1 plan. Records whether a plan still exists, the minimum number of orders
+that had to change vehicle or slot, and the round-2 solve time.
 
 Runs on gold constraints (no LLM), so it measures the solver's replanning and is
 fully reproducible. Feasibility verdicts are cross-checked against the OR-Tools
@@ -45,13 +46,13 @@ def replan_case(seed: int) -> dict[str, Any]:
     gold2 = scenario.gold_constraints + [
         {"type": "VEHICLE_UNAVAILABLE", "vehicle": CHANGED_VEHICLE, "slot": slot, "source": change}
     ]
-    round2 = solve(orders, vehicles, validate_constraints(gold2, orders, vehicles).constraints)
+    round2 = solve(orders, vehicles, validate_constraints(gold2, orders, vehicles).constraints,
+                   previous_plan=round1.plan)
     if round2.feasible != ground_truth_feasible(orders, vehicles, gold2):
         raise LabelDisagreement(f"seed {seed}: Z3 and the OR-Tools oracle disagree on round 2")
 
-    # Z3 returns some valid plan, not the closest one, so this counts every order
-    # whose (vehicle, slot) differs between the two plans
-    moved = sum(round1.plan[o] != round2.plan[o] for o in round1.plan) if round2.feasible else 0
+    # Minimum over all valid round-2 plans, so it does not depend on which plan Z3 picks
+    moved = round2.moved if round2.feasible else 0
     return {
         "seed": seed,
         "round1_feasible": True,

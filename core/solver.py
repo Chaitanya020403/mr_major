@@ -4,7 +4,8 @@ Z3 encoding of the dispatch planning problem.
 Decision variable: x[o, v, t] = True iff order o is dispatched on vehicle v in slot t.
 
 Rules R1–R9 are added as named (tracked) assertions so that UNSAT cores map back
-to rule labels.
+to rule labels. Replanning with a previous plan uses Z3 Optimize to move as few
+orders as possible.
 """
 
 from __future__ import annotations
@@ -12,7 +13,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from z3 import (
-    Bool, BoolRef, Solver, sat, unknown,
+    Bool, BoolRef, Solver, Optimize, sat, unknown,
     Not, And, Or, If, Implies, Sum, PbEq, ArithRef,
 )
 
@@ -40,6 +41,7 @@ class SolverResult:
     unsat_core_labels: list[str] = field(default_factory=list)
     solve_time_ms: float = 0.0
     timed_out: bool = False     # Z3 gave up before deciding; feasible is False but not proven
+    moved: Optional[int] = None  # replans only: orders whose (vehicle, slot) changed, minimised
 
 
 def _slot_index(slot: str) -> int:
@@ -51,12 +53,15 @@ def solve(
     vehicles: list[Vehicle],
     user_constraints: list[AnyConstraint],
     timeout_ms: int | None = None,
+    previous_plan: dict[str, tuple[str, str]] | None = None,
 ) -> SolverResult:
     """
     Encode and solve the dispatch planning problem.
 
     timeout_ms: give up after this long (result.timed_out). None = no limit, as in
     the experiments; the app passes a limit so near-full fleets cannot hang it.
+    previous_plan: replan with the fewest orders moved away from this plan. Orders
+    that are new or were dropped do not count as moves.
     """
     import time
 
@@ -68,8 +73,9 @@ def solve(
             for t in slots:
                 x[(o.id, v.id, t)] = Bool(f"x_{o.id}_{v.id}_{t}")
 
-    s = Solver()
-    s.set("unsat_core", True)
+    s: Solver | Optimize = Optimize() if previous_plan else Solver()
+    if not previous_plan:
+        s.set("unsat_core", True)   # Optimize tracks cores without this flag
     if timeout_ms is not None:
         s.set("timeout", timeout_ms)
 
@@ -213,6 +219,12 @@ def solve(
                     f"USER_window_{uc.order}_{uc.earliest}_{uc.latest}",
                 )
 
+    # --- Minimal change: an order counts as moved unless it keeps its previous assignment ---
+    if previous_plan:
+        kept = [x[(oid, vid, t)] for oid, (vid, t) in previous_plan.items() if (oid, vid, t) in x]
+        still_present = sum(1 for oid in previous_plan if oid in {o.id for o in orders})
+        s.minimize(still_present - Sum([If(k, 1, 0) for k in kept]))  # type: ignore[attr-defined]
+
     t0 = time.perf_counter()
     outcome = s.check()
     elapsed_ms = (time.perf_counter() - t0) * 1000
@@ -226,7 +238,10 @@ def solve(
                     if model.evaluate(x[(o.id, v.id, t)]):
                         plan[o.id] = (v.id, t)
                         break
-        return SolverResult(feasible=True, plan=plan, solve_time_ms=elapsed_ms)
+        moved = None
+        if previous_plan is not None:
+            moved = sum(1 for oid, a in plan.items() if oid in previous_plan and previous_plan[oid] != a)
+        return SolverResult(feasible=True, plan=plan, solve_time_ms=elapsed_ms, moved=moved)
 
     if outcome == unknown:
         return SolverResult(feasible=False, solve_time_ms=elapsed_ms, timed_out=True)
