@@ -21,14 +21,39 @@ def _default_fleet_raw():
     return json.loads(Path("data/fleet_default.json").read_text())
 
 
-def _load_json_upload(uploaded) -> list[dict] | None:
+@st.cache_data(show_spinner=False)
+def _excel_template() -> bytes:
+    from core.excel_loader import build_template
+    return build_template(
+        json.loads((WORKED_EXAMPLE / "orders.json").read_text()),
+        json.loads((WORKED_EXAMPLE / "fleet.json").read_text()),
+    )
+
+
+def _load_upload(uploaded, expect: str) -> tuple[list[dict] | None, list[dict] | None]:
+    """
+    Returns (orders, fleet) from an uploaded Excel, CSV or JSON file.
+    A JSON file holds only the expected kind; an Excel orders file may also carry a Fleet sheet.
+    """
     if uploaded is None:
-        return None
-    try:
-        return json.loads(uploaded.read())
-    except Exception as e:
-        st.error(f"Could not parse JSON: {e}")
-        return None
+        return None, None
+    data = uploaded.getvalue()
+    if uploaded.name.lower().endswith(".json"):
+        try:
+            raw = json.loads(data)
+        except Exception as e:
+            st.error(f"Could not parse JSON in '{uploaded.name}': {e}")
+            return None, None
+        return (raw, None) if expect == "orders" else (None, raw)
+
+    from core.excel_loader import load_spreadsheet
+    res = load_spreadsheet(uploaded.name, data, expect=expect)
+    if not res.ok:
+        shown = res.errors[:15]
+        more = f"\n- …and {len(res.errors) - 15} more" if len(res.errors) > 15 else ""
+        st.error(f"Please fix '{uploaded.name}':\n- " + "\n- ".join(shown) + more)
+        return None, None
+    return res.orders, res.fleet
 
 
 CLARIFY_PREFIX = "The LLM needs clarification: "
@@ -144,8 +169,18 @@ with st.sidebar:
 
     st.divider()
     st.header("Inputs")
-    orders_file = st.file_uploader("orders.json", type="json")
-    fleet_file  = st.file_uploader("fleet.json (optional — uses default T1/T2/T3)", type="json")
+    st.download_button(
+        "Download Excel template",
+        data=_excel_template(),
+        file_name="dispatch_template.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        help="Fill in your orders (and vehicles, on the Fleet sheet), then upload it below.",
+    )
+    orders_file = st.file_uploader("Orders (Excel, CSV or JSON)", type=["xlsx", "csv", "json"])
+    fleet_file  = st.file_uploader(
+        "Fleet (optional)", type=["xlsx", "csv", "json"],
+        help="Not needed if your Excel file has a Fleet sheet. Otherwise the default T1/T2/T3 fleet is used.",
+    )
 
 # Main area
 col_left, col_right = st.columns([1, 1])
@@ -184,14 +219,30 @@ with col_right:
 # Resolve inputs
 # ---------------------------------------------------------------------------
 
-orders_raw = _load_json_upload(orders_file)
-fleet_raw  = _load_json_upload(fleet_file) or _default_fleet_raw()
+orders_raw, sheet_fleet = _load_upload(orders_file, "orders")
+_, uploaded_fleet = _load_upload(fleet_file, "fleet")
+# Fleet precedence: separate fleet file > Fleet sheet in the orders workbook > default fleet
+fleet_raw = uploaded_fleet or sheet_fleet or _default_fleet_raw()
 
-if orders_file is None and orders_raw is None:
+if orders_file is None:
     # Use the worked example by default
     orders_raw = json.loads((WORKED_EXAMPLE / "orders.json").read_text())
-    fleet_raw  = json.loads((WORKED_EXAMPLE / "fleet.json").read_text())
+    fleet_raw  = uploaded_fleet or json.loads((WORKED_EXAMPLE / "fleet.json").read_text())
     st.info("Using worked example (orders A, B, C + fleet T1/T2). Upload your own files to override.")
+
+if orders_raw:
+    from core.excel_loader import orders_to_table, fleet_to_table
+    with st.expander("Loaded orders and fleet", expanded=orders_file is not None):
+        try:
+            c1, c2 = st.columns([3, 2])
+            c1.caption("Orders")
+            c1.dataframe(orders_to_table(orders_raw), hide_index=True)
+            c2.caption("Fleet" + ("" if uploaded_fleet or sheet_fleet or orders_file is None
+                                  else " (default — no fleet uploaded)"))
+            c2.dataframe(fleet_to_table(fleet_raw), hide_index=True)
+        except Exception:
+            # Malformed JSON records: the pipeline's data validator reports the details
+            st.json({"orders": orders_raw, "fleet": fleet_raw})
 
 # ---------------------------------------------------------------------------
 # Plan
