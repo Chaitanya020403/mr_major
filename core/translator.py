@@ -19,6 +19,9 @@ SYSTEM_PROMPT = """You are a constraint extractor for a warehouse dispatch plann
 Your ONLY job is to convert a natural-language dispatcher instruction into a JSON list
 of constraint objects that match the schema below. Do not plan or assign orders yourself.
 If a request is ambiguous, return a single object of type "AMBIGUOUS" with a "question" field.
+If the request adds no constraints (e.g. "plan the delivery", "make today's plan"),
+return an empty list []. The base rulebook (capacity, availability, order deadlines)
+is always enforced separately, so plain planning requests are NOT ambiguous.
 
 Constraint types and their required fields:
 - DEADLINE:            order, slot

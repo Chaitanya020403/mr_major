@@ -31,6 +31,16 @@ def _load_json_upload(uploaded) -> list[dict] | None:
         return None
 
 
+CLARIFY_PREFIX = "The LLM needs clarification: "
+
+
+def _show_pipeline_error(err: str) -> None:
+    if err.startswith(CLARIFY_PREFIX):
+        st.warning(err)
+    else:
+        st.error(err)
+
+
 def _run_pipeline(orders_raw, fleet_raw, request, provider, model):
     from core.data_validator import validate_orders, validate_fleet
     from core.translator import translate
@@ -47,6 +57,11 @@ def _run_pipeline(orders_raw, fleet_raw, request, provider, model):
         raw_json, llm_text = translate(request, orders, vehicles, provider, model)
     except Exception as e:
         return None, None, None, None, f"LLM translation failed: {e}"
+
+    clarify = [c for c in raw_json if isinstance(c, dict) and c.get("type") == "AMBIGUOUS"]
+    if clarify:
+        question = clarify[0].get("question") or "Please clarify your request."
+        return None, raw_json, None, None, CLARIFY_PREFIX + question
 
     cv = validate_constraints(raw_json, orders, vehicles)
     if not cv.ok:
@@ -154,7 +169,7 @@ if run_plan and orders_raw:
             orders_raw, fleet_raw, request, provider, model
         )
     if err:
-        st.error(err)
+        _show_pipeline_error(err)
     else:
         st.subheader("Result — LLM + Z3")
         if exp.feasible:
@@ -181,7 +196,7 @@ if run_compare and orders_raw:
                 orders_raw, fleet_raw, request, provider, model
             )
         if err:
-            st.error(err)
+            _show_pipeline_error(err)
         elif exp.feasible:
             st.success(exp.summary)
             st.dataframe(exp.plan_table)
@@ -245,7 +260,7 @@ if run_replan and orders_raw:
             orders_raw, fleet_raw, change_request, provider, model
         )
     if err:
-        st.error(err)
+        _show_pipeline_error(err)
     else:
         st.subheader("Replan result")
         if exp.feasible:
