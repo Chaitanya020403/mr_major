@@ -41,7 +41,8 @@ def _show_pipeline_error(err: str) -> None:
         st.error(err)
 
 
-def _run_pipeline(orders_raw, fleet_raw, request, provider, model):
+def _run_pipeline(orders_raw, fleet_raw, request, provider, model, base_request=None):
+    """base_request: for replanning, the original instructions whose constraints still apply."""
     from core.data_validator import validate_orders, validate_fleet
     from core.translator import translate
     from core.json_validator import validate_constraints
@@ -54,7 +55,11 @@ def _run_pipeline(orders_raw, fleet_raw, request, provider, model):
         return None, None, None, None, f"Data validation error:\n{ov}\n{fv}"
 
     try:
-        raw_json, llm_text = translate(request, orders, vehicles, provider, model)
+        raw_json = []
+        for req in [base_request, request]:
+            if req and req.strip():
+                part, _ = translate(req, orders, vehicles, provider, model)
+                raw_json.extend(part)
     except Exception as e:
         return None, None, None, None, f"LLM translation failed: {e}"
 
@@ -87,6 +92,35 @@ def _run_llm_alone(orders_raw, fleet_raw, request, provider, model):
         return None, f"LLM-alone failed: {e}"
 
     return parsed, None
+
+
+WORKED_EXAMPLE = Path("data/cases/case_000")
+
+
+def _referee_constraints(orders_raw, fleet_raw, request, translated):
+    """
+    Constraints the referee checks plans against, plus a label saying where they came from.
+    Gold constraints exist only for the unmodified worked example; otherwise fall back to
+    the LLM + Z3 translation (so the referee still enforces the base rulebook plus the request).
+    """
+    from core.data_validator import validate_orders, validate_fleet
+    from core.json_validator import validate_constraints
+
+    orders_v, _ = validate_orders(orders_raw)
+    vehicles_v, _ = validate_fleet(fleet_raw)
+    is_worked_example = (
+        orders_raw == json.loads((WORKED_EXAMPLE / "orders.json").read_text())
+        and fleet_raw == json.loads((WORKED_EXAMPLE / "fleet.json").read_text())
+        and request.strip() == (WORKED_EXAMPLE / "request.txt").read_text().strip()
+    )
+    if is_worked_example:
+        raw, label = json.loads((WORKED_EXAMPLE / "gold_constraints.json").read_text()), "gold constraints"
+    elif translated is not None:
+        raw, label = translated, "LLM + Z3 translated constraints"
+    else:
+        return orders_v, vehicles_v, None, None
+    gc = validate_constraints(raw, orders_v, vehicles_v)
+    return orders_v, vehicles_v, (gc.constraints if gc.ok else None), label
 
 
 # ---------------------------------------------------------------------------
@@ -155,8 +189,8 @@ fleet_raw  = _load_json_upload(fleet_file) or _default_fleet_raw()
 
 if orders_file is None and orders_raw is None:
     # Use the worked example by default
-    orders_raw = json.loads(Path("data/cases/case_000/orders.json").read_text())
-    fleet_raw  = json.loads(Path("data/cases/case_000/fleet.json").read_text())
+    orders_raw = json.loads((WORKED_EXAMPLE / "orders.json").read_text())
+    fleet_raw  = json.loads((WORKED_EXAMPLE / "fleet.json").read_text())
     st.info("Using worked example (orders A, B, C + fleet T1/T2). Upload your own files to override.")
 
 # ---------------------------------------------------------------------------
@@ -187,6 +221,7 @@ if run_plan and orders_raw:
 # ---------------------------------------------------------------------------
 
 if run_compare and orders_raw:
+    from referee.checker import check_plan
     col_z3, col_alone = st.columns(2)
 
     with col_z3:
@@ -203,21 +238,19 @@ if run_compare and orders_raw:
         else:
             st.error(exp.summary)
 
-        if result:
-            from referee.checker import check_plan
-            from core.data_validator import validate_orders, validate_fleet
-            from core.json_validator import validate_constraints
-            gold_raw = json.loads(Path("data/cases/case_000/gold_constraints.json").read_text())
-            orders_v, _ = validate_orders(orders_raw)
-            vehicles_v, _ = validate_fleet(fleet_raw)
-            gc = validate_constraints(gold_raw, orders_v, vehicles_v)
-            if result.feasible:
-                plan = result.plan
-                check = check_plan(plan, orders_v, vehicles_v, gc.constraints)
-                if check.valid:
-                    st.success("Referee: VALID plan")
-                else:
-                    st.error(f"Referee: INVALID\n{check}")
+    translated = raw_json if not err else None
+    orders_v, vehicles_v, ref_constraints, ref_label = _referee_constraints(
+        orders_raw, fleet_raw, request, translated
+    )
+
+    with col_z3:
+        if result and result.feasible and ref_constraints is not None:
+            check = check_plan(result.plan, orders_v, vehicles_v, ref_constraints)
+            st.caption(f"Referee checked against: {ref_label}")
+            if check.valid:
+                st.success("Referee: VALID plan")
+            else:
+                st.error(f"Referee: INVALID\n{check}")
 
     with col_alone:
         st.subheader("LLM-alone (baseline)")
@@ -228,24 +261,19 @@ if run_compare and orders_raw:
         elif parsed and parsed.get("feasible"):
             st.success("Feasible (LLM-alone)")
             st.json(parsed.get("plan", {}))
-            # Referee check
-            try:
-                from referee.checker import check_plan
-                from core.data_validator import validate_orders, validate_fleet
-                from core.json_validator import validate_constraints
-                gold_raw = json.loads(Path("data/cases/case_000/gold_constraints.json").read_text())
-                orders_v, _ = validate_orders(orders_raw)
-                vehicles_v, _ = validate_fleet(fleet_raw)
-                gc = validate_constraints(gold_raw, orders_v, vehicles_v)
-                raw_plan = parsed["plan"]
-                plan = {oid: (v["vehicle"], v["slot"]) for oid, v in raw_plan.items()}
-                check = check_plan(plan, orders_v, vehicles_v, gc.constraints)
-                if check.valid:
-                    st.success("Referee: VALID")
-                else:
-                    st.error(f"Referee: INVALID\n{check}")
-            except Exception:
-                pass
+            if ref_constraints is None:
+                st.caption("Referee skipped: no reference constraints for this request.")
+            else:
+                try:
+                    plan = {oid: (v["vehicle"], v["slot"]) for oid, v in parsed["plan"].items()}
+                    check = check_plan(plan, orders_v, vehicles_v, ref_constraints)
+                    st.caption(f"Referee checked against: {ref_label}")
+                    if check.valid:
+                        st.success("Referee: VALID")
+                    else:
+                        st.error(f"Referee: INVALID\n{check}")
+                except Exception as e:
+                    st.error(f"Referee: LLM-alone plan is malformed ({e})")
         else:
             st.error("Infeasible (LLM-alone)")
             st.json(parsed or {})
@@ -257,7 +285,7 @@ if run_compare and orders_raw:
 if run_replan and orders_raw:
     with st.spinner("Replanning…"):
         orders, raw_json, result, exp, err = _run_pipeline(
-            orders_raw, fleet_raw, change_request, provider, model
+            orders_raw, fleet_raw, change_request, provider, model, base_request=request
         )
     if err:
         _show_pipeline_error(err)
