@@ -21,7 +21,6 @@ RULE_DESCRIPTIONS = {
     "R6": "urgent order deadline",
     "R7": "precedence between orders",
     "R8": "user restriction",
-    "R9": "preference (soft)",
     "USER": "dispatcher instruction",
 }
 
@@ -33,6 +32,7 @@ class Explanation:
     plan_table: list[dict] = field(default_factory=list)   # rows for SAT
     conflict_json: dict = field(default_factory=dict)       # structured for UNSAT
     detail: str = ""
+    timed_out: bool = False
 
 
 def explain(
@@ -42,6 +42,16 @@ def explain(
 ) -> Explanation:
     if result.feasible:
         return _explain_sat(result, orders, vehicles)
+    if result.timed_out:
+        return Explanation(
+            feasible=False,
+            timed_out=True,
+            summary=(
+                f"Could not decide within {result.solve_time_ms / 1000:.0f} s whether a valid plan exists. "
+                "This happens when vehicles are nearly full. Try fewer orders, more vehicles "
+                "or capacity, or looser deadlines."
+            ),
+        )
     return _explain_unsat(result, orders, vehicles)
 
 

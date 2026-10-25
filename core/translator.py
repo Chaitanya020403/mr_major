@@ -33,7 +33,6 @@ Constraint types and their required fields:
 - FORBIDDEN_SLOT:      order, slot
 - VEHICLE_UNAVAILABLE: vehicle, slot
 - CHANGE_DEADLINE:     order, new_deadline
-- PREFERRED_EARLY:     order
 
 Valid slots: {slots}
 Valid order IDs: {order_ids}

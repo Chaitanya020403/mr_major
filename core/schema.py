@@ -21,7 +21,6 @@ ConstraintType = Literal[
     "FORBIDDEN_SLOT",
     "VEHICLE_UNAVAILABLE",
     "CHANGE_DEADLINE",
-    "PREFERRED_EARLY",
     "ADD_ORDER",           # optional extension
 ]
 
@@ -117,11 +116,6 @@ class ChangeDeadlineConstraint(BaseConstraint):
     new_deadline: str
 
 
-class PreferredEarlyConstraint(BaseConstraint):
-    type: Literal["PREFERRED_EARLY"]
-    order: str
-
-
 # Union type used by the JSON validator
 from typing import Union, Annotated
 from pydantic import Discriminator, Tag
@@ -136,7 +130,6 @@ AnyConstraint = Union[
     ForbiddenSlotConstraint,
     VehicleUnavailableConstraint,
     ChangeDeadlineConstraint,
-    PreferredEarlyConstraint,
 ]
 
 # Map from type string to model class (used by the validator)
@@ -150,5 +143,4 @@ CONSTRAINT_CLASSES: dict[str, type[BaseConstraint]] = {
     "FORBIDDEN_SLOT":      ForbiddenSlotConstraint,
     "VEHICLE_UNAVAILABLE": VehicleUnavailableConstraint,
     "CHANGE_DEADLINE":     ChangeDeadlineConstraint,
-    "PREFERRED_EARLY":     PreferredEarlyConstraint,
 }

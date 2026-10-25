@@ -57,6 +57,16 @@ def _load_upload(uploaded, expect: str) -> tuple[list[dict] | None, list[dict] |
 
 
 CLARIFY_PREFIX = "The LLM needs clarification: "
+SOLVER_TIMEOUT_MS = 20_000   # near-full fleets can take minutes to prove infeasible
+
+
+def _show_infeasible(exp, show_conflict: bool = True) -> None:
+    if exp.timed_out:
+        st.warning(exp.summary)
+        return
+    st.error(exp.summary)
+    if show_conflict:
+        st.json(exp.conflict_json)
 
 
 def _show_pipeline_error(err: str) -> None:
@@ -97,7 +107,7 @@ def _run_pipeline(orders_raw, fleet_raw, request, provider, model, base_request=
     if not cv.ok:
         return None, raw_json, None, None, f"Constraint validation error:\n{cv}"
 
-    result = solve(orders, vehicles, cv.constraints)
+    result = solve(orders, vehicles, cv.constraints, timeout_ms=SOLVER_TIMEOUT_MS)
     exp = explain(result, orders, vehicles)
     return orders, raw_json, result, exp, None
 
@@ -209,8 +219,7 @@ with col_left:
             "R5 Special-handling compatibility\n"
             "R6 Urgent orders by deadline\n"
             "R7 Precedence between orders\n"
-            "R8 User restrictions\n"
-            "R9 Soft preferences (minimise slot index)"
+            "R8 User restrictions"
         )
 
 with col_right:
@@ -327,8 +336,7 @@ if run_plan and orders_raw:
             st.success(exp.summary)
             st.dataframe(exp.plan_table)
         else:
-            st.error(exp.summary)
-            st.json(exp.conflict_json)
+            _show_infeasible(exp)
 
         with st.expander("LLM translated constraints"):
             st.json(raw_json)
@@ -353,7 +361,7 @@ if run_compare and orders_raw:
             st.success(exp.summary)
             st.dataframe(exp.plan_table)
         else:
-            st.error(exp.summary)
+            _show_infeasible(exp, show_conflict=False)
 
     translated = raw_json if not err else None
     orders_v, vehicles_v, ref_constraints, ref_label = _referee_constraints(
@@ -412,7 +420,6 @@ if run_replan and orders_raw:
             st.success(exp.summary)
             st.dataframe(exp.plan_table)
         else:
-            st.error(exp.summary)
-            st.json(exp.conflict_json)
+            _show_infeasible(exp)
         with st.expander("Translated constraints for change"):
             st.json(raw_json)

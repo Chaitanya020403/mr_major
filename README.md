@@ -31,7 +31,6 @@ A dispatcher assigns each order to a vehicle and a dispatch time slot subject to
 | R6 | Urgent orders dispatched by their deadline |
 | R7 | Precedence between orders |
 | R8 | User-supplied restrictions (forbid vehicle, forbid slot) |
-| R9 | Soft preferences (minimise vehicles used or total slot index) |
 
 Instructions arrive daily as natural-language messages. LLMs parse such messages well but are unreliable at multi-constraint reasoning and can silently break rules or hallucinate feasibility.
 
@@ -140,7 +139,7 @@ python -m experiments.run --case data/cases/case_000 --method both
 ]
 ```
 
-Supported constraint types: `DEADLINE`, `TIME_WINDOW`, `URGENT_DELIVERY`, `PRECEDENCE`, `FORBIDDEN_VEHICLE`, `REQUIRED_VEHICLE`, `FORBIDDEN_SLOT`, `VEHICLE_UNAVAILABLE`, `CHANGE_DEADLINE`, `PREFERRED_EARLY`.
+Supported constraint types: `DEADLINE`, `TIME_WINDOW`, `URGENT_DELIVERY`, `PRECEDENCE`, `FORBIDDEN_VEHICLE`, `REQUIRED_VEHICLE`, `FORBIDDEN_SLOT`, `VEHICLE_UNAVAILABLE`, `CHANGE_DEADLINE`.
 
 ---
 

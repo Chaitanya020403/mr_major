@@ -3,8 +3,8 @@ Z3 encoding of the dispatch planning problem.
 
 Decision variable: x[o, v, t] = True iff order o is dispatched on vehicle v in slot t.
 
-Rules R1–R9 are added as named (tracked) assertions so that UNSAT cores map back
-to rule labels.  R9 (soft preferences) uses Z3 Optimize if enabled.
+Rules R1–R8 are added as named (tracked) assertions so that UNSAT cores map back
+to rule labels.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from z3 import (
-    Bool, BoolRef, Solver, Optimize, sat, unsat,
+    Bool, BoolRef, Solver, sat, unknown,
     Not, And, Or, If, Sum, PbEq, ArithRef,
 )
 
@@ -28,7 +28,6 @@ from core.schema import (
     TimeWindowConstraint,
     UrgentDeliveryConstraint,
     ChangeDeadlineConstraint,
-    PreferredEarlyConstraint,
 )
 
 
@@ -39,6 +38,7 @@ class SolverResult:
     # plan[order_id] = (vehicle_id, slot)
     unsat_core_labels: list[str] = field(default_factory=list)
     solve_time_ms: float = 0.0
+    timed_out: bool = False     # Z3 gave up before deciding; feasible is False but not proven
 
 
 def _slot_index(slot: str) -> int:
@@ -49,12 +49,13 @@ def solve(
     orders: list[Order],
     vehicles: list[Vehicle],
     user_constraints: list[AnyConstraint],
-    optimize: bool = False,
+    timeout_ms: int | None = None,
 ) -> SolverResult:
     """
     Encode and solve the dispatch planning problem.
 
-    If optimize=True, uses Z3 Optimize to minimise total slot index (R9).
+    timeout_ms: give up after this long (result.timed_out). None = no limit, as in
+    the experiments; the app passes a limit so near-full fleets cannot hang it.
     """
     import time
 
@@ -66,8 +67,10 @@ def solve(
             for t in slots:
                 x[(o.id, v.id, t)] = Bool(f"x_{o.id}_{v.id}_{t}")
 
-    s: Solver | Optimize = Optimize() if optimize else Solver()
-    s.set("unsat_core", True)  # type: ignore[attr-defined]
+    s = Solver()
+    s.set("unsat_core", True)
+    if timeout_ms is not None:
+        s.set("timeout", timeout_ms)
 
     def track(constraint: BoolRef, label: str) -> None:
         s.assert_and_track(constraint, Bool(label))  # type: ignore[attr-defined]
@@ -175,10 +178,6 @@ def solve(
             if uc.order in order_ids and uc.deadline in slots:
                 track(slot_term(uc.order) <= _slot_index(uc.deadline), f"USER_urgent_{uc.order}")
 
-    # --- R9: soft preference (minimize total slot index) ---
-    if optimize:
-        s.minimize(Sum([slot_term(o.id) for o in orders]))  # type: ignore[attr-defined]
-
     t0 = time.perf_counter()
     outcome = s.check()
     elapsed_ms = (time.perf_counter() - t0) * 1000
@@ -193,6 +192,9 @@ def solve(
                         plan[o.id] = (v.id, t)
                         break
         return SolverResult(feasible=True, plan=plan, solve_time_ms=elapsed_ms)
+
+    if outcome == unknown:
+        return SolverResult(feasible=False, solve_time_ms=elapsed_ms, timed_out=True)
 
     # UNSAT
     core_labels = [str(lit) for lit in s.unsat_core()]  # type: ignore[attr-defined]
