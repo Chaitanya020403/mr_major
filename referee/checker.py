@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from core.schema import Order, Vehicle, VALID_SLOTS, AnyConstraint
+from core.schema import Order, Vehicle, VALID_SLOTS, VEHICLE_TYPE_NEEDS, FRAGILE_MAX_LOAD, AnyConstraint
 from core.schema import (
     PrecedenceConstraint,
     ForbiddenVehicleConstraint,
@@ -90,7 +90,7 @@ def check_plan(
 
         # R5: compatibility
         for need in o.needs:
-            if need not in v.type:
+            if need in VEHICLE_TYPE_NEEDS and need not in v.type:
                 violations.append(f"R5: order {oid} needs '{need}' but vehicle {vid} is '{v.type}'")
 
         # R6: urgent
@@ -107,6 +107,27 @@ def check_plan(
         cap = vehicle_map[vid].capacity
         if w > cap:
             violations.append(f"R2: {vid}@{slot} overloaded ({w:.0f} kg > {cap:.0f} kg)")
+
+    # R9: fragile handling per vehicle per slot
+    groups: dict[tuple[str, str], list[Order]] = {}
+    for oid, (vid, slot) in plan.items():
+        groups.setdefault((vid, slot), []).append(order_map[oid])
+    for (vid, slot), group in groups.items():
+        fragile = [o.id for o in group if "fragile" in o.needs]
+        if not fragile:
+            continue
+        limit = FRAGILE_MAX_LOAD * vehicle_map[vid].capacity
+        if load[(vid, slot)] > limit:
+            violations.append(
+                f"R9: {vid}@{slot} carries fragile {', '.join(fragile)} but is loaded "
+                f"{load[(vid, slot)]:.0f} kg > {limit:.0f} kg ({FRAGILE_MAX_LOAD:.0%})"
+            )
+        oversized = [o.id for o in group if "oversized" in o.needs and o.id not in fragile]
+        if oversized:
+            violations.append(
+                f"R9: {vid}@{slot} carries fragile {', '.join(fragile)} together with "
+                f"oversized {', '.join(oversized)}"
+            )
 
     # Gold user constraints
     for uc in gold_constraints:

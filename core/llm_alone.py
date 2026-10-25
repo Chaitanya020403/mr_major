@@ -16,20 +16,23 @@ import os
 import logging
 from typing import Any
 
-from core.schema import Order, Vehicle, VALID_SLOTS
+from core.schema import Order, Vehicle, VALID_SLOTS, FRAGILE_MAX_LOAD
 
 logger = logging.getLogger(__name__)
 
-RULEBOOK = """
+RULEBOOK = f"""
 Rules that must ALL be satisfied:
 R1. Every order assigned to exactly one vehicle and one slot.
 R2. Total weight on a vehicle in a slot must not exceed its capacity.
 R3. A vehicle can only be used in slots where it is available.
 R4. An order can only be dispatched within its delivery window (or by its deadline).
-R5. An order that needs refrigeration can only go on a refrigerated vehicle.
+R5. An order that needs refrigeration can only go on a refrigerated vehicle;
+    an oversized order can only go on an oversized vehicle.
 R6. An urgent order must leave by its stated deadline.
 R7. If order X must go before order Y, then slot(X) < slot(Y).
 R8. Any user-stated restrictions (forbidden vehicle, forbidden slot) must be respected.
+R9. A vehicle carrying a fragile order in a slot may be loaded to at most {FRAGILE_MAX_LOAD:.0%} of its
+    capacity in that slot, and may not carry any oversized order in that slot.
 """
 
 SYSTEM_PROMPT = """You are a warehouse dispatch planner.

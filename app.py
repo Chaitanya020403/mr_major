@@ -12,6 +12,8 @@ from pathlib import Path
 
 import streamlit as st
 
+from core.schema import FRAGILE_MAX_LOAD
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -219,7 +221,8 @@ with col_left:
             "R5 Special-handling compatibility\n"
             "R6 Urgent orders by deadline\n"
             "R7 Precedence between orders\n"
-            "R8 User restrictions"
+            "R8 User restrictions\n"
+            f"R9 Fragile: vehicle at most {FRAGILE_MAX_LOAD:.0%} loaded, no oversized orders in the same trip"
         )
 
 with col_right:

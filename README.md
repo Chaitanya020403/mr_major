@@ -31,6 +31,7 @@ A dispatcher assigns each order to a vehicle and a dispatch time slot subject to
 | R6 | Urgent orders dispatched by their deadline |
 | R7 | Precedence between orders |
 | R8 | User-supplied restrictions (forbid vehicle, forbid slot) |
+| R9 | Fragile handling: a vehicle carrying a fragile order is loaded to at most 60% of capacity in that slot and carries no oversized order then |
 
 Instructions arrive daily as natural-language messages. LLMs parse such messages well but are unreliable at multi-constraint reasoning and can silently break rules or hallucinate feasibility.
 

@@ -9,7 +9,7 @@ import re
 from dataclasses import dataclass, field
 
 from core.solver import SolverResult
-from core.schema import Order, Vehicle
+from core.schema import Order, Vehicle, FRAGILE_MAX_LOAD
 
 
 RULE_DESCRIPTIONS = {
@@ -21,6 +21,7 @@ RULE_DESCRIPTIONS = {
     "R6": "urgent order deadline",
     "R7": "precedence between orders",
     "R8": "user restriction",
+    "R9": f"fragile handling (max {FRAGILE_MAX_LOAD:.0%} load, no oversized items alongside)",
     "USER": "dispatcher instruction",
 }
 

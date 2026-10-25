@@ -11,7 +11,7 @@ Used only by the referee, never inside the pipeline being evaluated.
 from __future__ import annotations
 from itertools import product
 
-from core.schema import Order, Vehicle, VALID_SLOTS, AnyConstraint
+from core.schema import Order, Vehicle, VALID_SLOTS, VEHICLE_TYPE_NEEDS, FRAGILE_MAX_LOAD, AnyConstraint
 from referee.checker import check_plan, CheckResult
 
 
@@ -79,6 +79,19 @@ def ortools_oracle(
                 sum(int(o.weight) * x[(o.id, v.id, t)] for o in orders) <= int(v.capacity)
             )
 
+    # R9: fragile handling (CP-SAT is integer-only, so compare 100 * load to percent * capacity)
+    pct = round(FRAGILE_MAX_LOAD * 100)
+    for f in (o for o in orders if "fragile" in o.needs):
+        for v in vehicles:
+            for t in slots:
+                model.add(
+                    sum(100 * int(o.weight) * x[(o.id, v.id, t)] for o in orders)
+                    <= pct * int(v.capacity)
+                ).only_enforce_if(x[(f.id, v.id, t)])
+                for g in orders:
+                    if g.id != f.id and "oversized" in g.needs:
+                        model.add(x[(f.id, v.id, t)] + x[(g.id, v.id, t)] <= 1)
+
     # R3
     for o in orders:
         for v in vehicles:
@@ -100,6 +113,8 @@ def ortools_oracle(
     # R5
     for o in orders:
         for need in o.needs:
+            if need not in VEHICLE_TYPE_NEEDS:
+                continue
             for v in vehicles:
                 if need not in v.type:
                     for t in slots:

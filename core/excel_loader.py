@@ -6,7 +6,7 @@ orders.json and fleet.json, so data_validator, solver and referee are unchanged.
 Also builds the downloadable template workbook.
 
 Orders sheet columns:
-    Order ID | Weight (kg) | Deadline | Earliest | Latest | Priority | Refrigerated | Oversized
+    Order ID | Weight (kg) | Deadline | Earliest | Latest | Priority | Refrigerated | Oversized | Fragile
 Fleet sheet columns:
     Vehicle ID | Capacity (kg) | Type | 9AM | 11AM | 1PM | 3PM
 """
@@ -20,16 +20,15 @@ from typing import Any
 
 import pandas as pd
 
-from core.schema import VALID_SLOTS
+from core.schema import VALID_SLOTS, FRAGILE_MAX_LOAD
 from core.data_validator import KNOWN_VEHICLE_TYPES, KNOWN_ORDER_NEEDS
 
 
 ORDER_COLUMNS = ["Order ID", "Weight (kg)", "Deadline", "Earliest", "Latest", "Priority",
-                 "Refrigerated", "Oversized"]
+                 "Refrigerated", "Oversized", "Fragile"]
 FLEET_COLUMNS = ["Vehicle ID", "Capacity (kg)", "Type"] + VALID_SLOTS
-# Only needs some vehicle type can satisfy (R5 matches need == vehicle type); "fragile" has none
-NEED_COLUMNS = {"Refrigerated": "refrigerated", "Oversized": "oversized"}
-assert set(NEED_COLUMNS.values()) <= KNOWN_ORDER_NEEDS & KNOWN_VEHICLE_TYPES
+NEED_COLUMNS = {"Refrigerated": "refrigerated", "Oversized": "oversized", "Fragile": "fragile"}
+assert set(NEED_COLUMNS.values()) == KNOWN_ORDER_NEEDS
 
 # Alternative header spellings people are likely to type (compared after _norm_header)
 _HEADER_ALIASES = {
@@ -422,6 +421,8 @@ HOW_TO_LINES = [
     "  Earliest / Latest: the time window the customer can receive it (optional; fill both or neither).",
     "  Priority: Normal or Urgent.",
     "  Refrigerated / Oversized: Yes if the order must go on a Refrigerated / Oversized vehicle.",
+    f"  Fragile: Yes if the order is breakable. The vehicle carrying it is loaded to at most "
+    f"{FRAGILE_MAX_LOAD:.0%} of capacity on that trip and carries no Oversized orders with it.",
     "FLEET sheet: one row per vehicle. If you delete this sheet, the app's default fleet is used.",
     "  Vehicle ID: e.g. T1. Capacity (kg): the most it can carry in one trip.",
     "  Type: Normal, Refrigerated or Oversized.",

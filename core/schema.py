@@ -11,6 +11,13 @@ from pydantic import BaseModel, model_validator
 
 VALID_SLOTS = ["9AM", "11AM", "1PM", "3PM"]
 
+# Order needs met by a vehicle of the same type (R5). Other needs are handling rules.
+VEHICLE_TYPE_NEEDS = {"refrigerated", "oversized"}
+
+# R9 fragile handling: a vehicle carrying a fragile order in a slot is loaded to at most
+# this fraction of its capacity in that slot, and carries no oversized order in that slot.
+FRAGILE_MAX_LOAD = 0.6
+
 ConstraintType = Literal[
     "DEADLINE",
     "TIME_WINDOW",

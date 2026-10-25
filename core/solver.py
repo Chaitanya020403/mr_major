@@ -3,7 +3,7 @@ Z3 encoding of the dispatch planning problem.
 
 Decision variable: x[o, v, t] = True iff order o is dispatched on vehicle v in slot t.
 
-Rules R1–R8 are added as named (tracked) assertions so that UNSAT cores map back
+Rules R1–R9 are added as named (tracked) assertions so that UNSAT cores map back
 to rule labels.
 """
 
@@ -13,11 +13,11 @@ from typing import Optional
 
 from z3 import (
     Bool, BoolRef, Solver, sat, unknown,
-    Not, And, Or, If, Sum, PbEq, ArithRef,
+    Not, And, Or, If, Implies, Sum, PbEq, ArithRef,
 )
 
 from core.schema import (
-    Order, Vehicle, VALID_SLOTS,
+    Order, Vehicle, VALID_SLOTS, VEHICLE_TYPE_NEEDS, FRAGILE_MAX_LOAD,
     AnyConstraint,
     PrecedenceConstraint,
     ForbiddenVehicleConstraint,
@@ -81,10 +81,11 @@ def solve(
         track(PbEq(lits, 1), f"R1_once_{o.id}")
 
     # --- R2: capacity per vehicle per slot ---
+    load: dict[tuple[str, str], ArithRef] = {}
     for v in vehicles:
         for t in slots:
-            total = Sum([If(x[(o.id, v.id, t)], o.weight, 0) for o in orders])
-            track(total <= v.capacity, f"R2_cap_{v.id}_{t}")
+            load[(v.id, t)] = Sum([If(x[(o.id, v.id, t)], o.weight, 0) for o in orders])
+            track(load[(v.id, t)] <= v.capacity, f"R2_cap_{v.id}_{t}")
 
     # --- R3: vehicle availability ---
     for o in orders:
@@ -120,10 +121,29 @@ def solve(
     # --- R5: special-handling compatibility ---
     for o in orders:
         for need in o.needs:
+            if need not in VEHICLE_TYPE_NEEDS:
+                continue
             for v in vehicles:
                 if need not in v.type and need != v.type:
                     for t in slots:
                         track(Not(x[(o.id, v.id, t)]), f"R5_compat_{o.id}_{v.id}_{need}_{t}")
+
+    # --- R9: fragile handling (load limit, no oversized orders alongside) ---
+    fragile = [o for o in orders if "fragile" in o.needs]
+    oversized = [o for o in orders if "oversized" in o.needs]
+    for f in fragile:
+        for v in vehicles:
+            for t in slots:
+                track(
+                    Implies(x[(f.id, v.id, t)], load[(v.id, t)] <= FRAGILE_MAX_LOAD * v.capacity),
+                    f"R9_fragile_load_{f.id}_{v.id}_{t}",
+                )
+                for g in oversized:
+                    if g.id != f.id:
+                        track(
+                            Not(And(x[(f.id, v.id, t)], x[(g.id, v.id, t)])),
+                            f"R9_fragile_mix_{f.id}_{g.id}_{v.id}_{t}",
+                        )
 
     # --- Derived slot term for an order ---
     def slot_term(oid: str) -> ArithRef:
