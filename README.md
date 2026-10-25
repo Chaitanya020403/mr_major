@@ -91,6 +91,9 @@ streamlit run app.py
 
 # 5. Run a single planning scenario from the command line
 python -m experiments.run --case data/cases/case_000 --method both
+
+# 6. Experiment B: replanning after a vehicle outage (no LLM needed)
+python -m experiments.replan --n 20 --out results/exp_b.jsonl
 ```
 
 ---
